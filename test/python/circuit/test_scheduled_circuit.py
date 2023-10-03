@@ -17,7 +17,7 @@ from ddt import ddt, data
 from qiskit import QuantumCircuit, QiskitError
 from qiskit import transpile, assemble, BasicAer
 from qiskit.circuit import Parameter
-from qiskit.providers.fake_provider import FakeParis
+from qiskit.providers.fake_provider import Fake27QV1Pulse
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.instruction_durations import InstructionDurations
 
@@ -30,8 +30,8 @@ class TestScheduledCircuit(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.backend_with_dt = FakeParis()
-        self.backend_without_dt = FakeParis()
+        self.backend_with_dt = Fake27QV1Pulse()
+        self.backend_without_dt = Fake27QV1Pulse()
         delattr(self.backend_without_dt.configuration(), "dt")
         self.dt = 2.2222222222222221e-10
         self.simulator_backend = BasicAer.get_backend("qasm_simulator")

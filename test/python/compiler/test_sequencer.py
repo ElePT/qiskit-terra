@@ -18,7 +18,7 @@ import unittest
 from qiskit import QuantumCircuit, pulse
 from qiskit.compiler import sequence, transpile, schedule
 from qiskit.pulse.transforms import pad
-from qiskit.providers.fake_provider import FakeParis
+from qiskit.providers.fake_provider import Fake27QV1Pulse
 
 from qiskit.test import QiskitTestCase
 
@@ -28,7 +28,7 @@ class TestSequence(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.backend = FakeParis()
+        self.backend = Fake27QV1Pulse()
 
     def test_sequence_empty(self):
         self.assertEqual(sequence([], self.backend), [])

@@ -20,8 +20,10 @@ from qiskit.converters import circuit_to_dag
 
 from qiskit import circuit, schedule, QiskitError
 from qiskit.circuit.library.standard_gates import SXGate, RZGate
-from qiskit.providers.fake_provider import FakeHanoi  # TODO - include FakeHanoiV2, FakeSherbrooke
-from qiskit.providers.fake_provider import FakeArmonk
+from qiskit.providers.fake_provider import (
+    Fake27QV1Pulse,
+)  # TODO - include FakeHanoiV2, FakeSherbrooke
+from qiskit.providers.fake_provider import FakeOpenPulse2Q
 from qiskit.pulse import (
     ControlChannel,
     DriveChannel,
@@ -226,7 +228,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
     @data(-np.pi / 4, 0.1, np.pi / 4, np.pi / 2, np.pi)
     def test_rzx_calibration_cr_pulse_stretch(self, theta: float):
         """Test that cross resonance pulse durations are computed correctly."""
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         cr_schedule = inst_map.get("cx", (0, 1))
         with builder.build() as test_sched:
@@ -239,7 +241,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
     @data(-np.pi / 4, 0.1, np.pi / 4, np.pi / 2, np.pi)
     def test_rzx_calibration_rotary_pulse_stretch(self, theta: float):
         """Test that rotary pulse durations are computed correctly."""
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         cr_schedule = inst_map.get("cx", (0, 1))
         with builder.build() as test_sched:
@@ -257,7 +259,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
         qc.rzx(theta, 0, 1)
         dag = circuit_to_dag(qc)
 
-        backend = FakeArmonk()
+        backend = FakeOpenPulse2Q()
         inst_map = backend.defaults().instruction_schedule_map
         _pass = RZXCalibrationBuilder(inst_map)
 
@@ -275,7 +277,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
         qc = circuit.QuantumCircuit(2)
         qc.rzx(theta, 0, 1)
 
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         _pass = RZXCalibrationBuilder(inst_map)
         test_qc = PassManager(_pass).run(qc)
@@ -300,7 +302,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
         qc = circuit.QuantumCircuit(2)
         qc.rzx(theta, 1, 0)
 
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         _pass = RZXCalibrationBuilder(inst_map)
         test_qc = PassManager(_pass).run(qc)
@@ -387,7 +389,7 @@ class TestRZXCalibrationBuilderNoEcho(TestCalibrationBuilder):
         qc = circuit.QuantumCircuit(2)
         qc.rzx(theta, 0, 1)
 
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
 
         _pass = RZXCalibrationBuilderNoEcho(inst_map)

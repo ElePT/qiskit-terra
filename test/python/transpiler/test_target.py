@@ -44,11 +44,11 @@ from qiskit.transpiler import Target
 from qiskit.transpiler import InstructionProperties
 from qiskit.test import QiskitTestCase
 from qiskit.providers.fake_provider import (
-    FakeBackendV2,
+    FakeGeneric,
     FakeMumbaiFractionalCX,
-    FakeVigo,
-    FakeNairobi,
-    FakeGeneva,
+    Fake5QV1,
+    Fake7QV1Pulse,
+    FakeBackendV2
 )
 
 
@@ -1304,15 +1304,21 @@ Instructions:
             )
 
     def test_default_instmap_has_no_custom_gate(self):
-        backend = FakeGeneva()
-        target = backend.target
+        with pulse.build(name="sx_q0") as custom_sx_q0:
+            pulse.play(pulse.Constant(100, 0.1), pulse.DriveChannel(0))
 
+        backend = FakeGeneric(num_qubits=27)
+        # from qiskit.providers.fake_provider import FakeGeneva
+        # backend = FakeGeneva()
+        target = backend.target
+        print(target.instruction_schedule_map())
         # This copies .calibraiton of InstructionProperties of each instruction
         # This must not convert PulseQobj to Schedule during this.
         # See qiskit-terra/#9595
         inst_map = target.instruction_schedule_map()
         self.assertFalse(inst_map.has_custom_gate())
 
+        inst_map.add("sx", (0,), custom_sx_q0)
         # Get pulse schedule. This generates Schedule provided by backend.
         sched = inst_map.get("sx", (0,))
         self.assertEqual(sched.metadata["publisher"], CalibrationPublisher.BACKEND_PROVIDER)
@@ -1869,7 +1875,7 @@ class TestTargetFromConfiguration(QiskitTestCase):
         self.assertEqual({(0, 1), (1, 2), (2, 0)}, target["cx"].keys())
 
     def test_properties(self):
-        fake_backend = FakeVigo()
+        fake_backend = Fake5QV1()
         config = fake_backend.configuration()
         properties = fake_backend.properties()
         target = Target.from_configuration(
@@ -1882,7 +1888,7 @@ class TestTargetFromConfiguration(QiskitTestCase):
         self.assertEqual(0, target["rz"][(0,)].duration)
 
     def test_properties_with_durations(self):
-        fake_backend = FakeVigo()
+        fake_backend = Fake5QV1()
         config = fake_backend.configuration()
         properties = fake_backend.properties()
         durations = InstructionDurations([("rz", 0, 0.5)], dt=1.0)
@@ -1897,7 +1903,7 @@ class TestTargetFromConfiguration(QiskitTestCase):
         self.assertEqual(0.5, target["rz"][(0,)].duration)
 
     def test_inst_map(self):
-        fake_backend = FakeNairobi()
+        fake_backend = Fake7QV1Pulse()
         config = fake_backend.configuration()
         properties = fake_backend.properties()
         defaults = fake_backend.defaults()
@@ -1918,7 +1924,7 @@ class TestTargetFromConfiguration(QiskitTestCase):
         self.assertEqual(target.acquire_alignment, constraints.acquire_alignment)
 
     def test_concurrent_measurements(self):
-        fake_backend = FakeVigo()
+        fake_backend = Fake5QV1()
         config = fake_backend.configuration()
         target = Target.from_configuration(
             basis_gates=config.basis_gates,

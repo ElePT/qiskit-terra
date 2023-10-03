@@ -15,7 +15,7 @@
 from qiskit import QuantumRegister
 from qiskit.providers.backend import Backend
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeMelbourne, FakeArmonk, FakeHanoi, FakeHanoiV2
+from qiskit.providers.fake_provider import Fake20QV1, Fake5QV1, Fake27QV1Pulse, FakeGeneric
 from qiskit.providers.basicaer import QasmSimulatorPy
 from qiskit.transpiler.coupling import CouplingMap
 from qiskit.transpiler.passmanager_config import PassManagerConfig
@@ -27,10 +27,10 @@ class TestPassManagerConfig(QiskitTestCase):
     def test_config_from_backend(self):
         """Test from_backend() with a valid backend.
 
-        `FakeHanoi` is used in this testcase. This backend has `defaults` attribute
+        `Fake27QV1Pulse` is used in this testcase. This backend has `defaults` attribute
         that contains an instruction schedule map.
         """
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         config = PassManagerConfig.from_backend(backend)
         self.assertEqual(config.basis_gates, backend.configuration().basis_gates)
         self.assertEqual(config.inst_map, backend.defaults().instruction_schedule_map)
@@ -40,7 +40,7 @@ class TestPassManagerConfig(QiskitTestCase):
 
     def test_config_from_backend_v2(self):
         """Test from_backend() with a BackendV2 instance."""
-        backend = FakeHanoiV2()
+        backend = FakeGeneric(num_qubits=27)
         config = PassManagerConfig.from_backend(backend)
         self.assertEqual(config.basis_gates, backend.operation_names)
         self.assertEqual(config.inst_map, backend.instruction_schedule_map)
@@ -60,7 +60,7 @@ class TestPassManagerConfig(QiskitTestCase):
         qr = QuantumRegister(4, "qr")
         initial_layout = [None, qr[0], qr[1], qr[2], None, qr[3]]
 
-        backend = FakeMelbourne()
+        backend = Fake20QV1()
         config = PassManagerConfig.from_backend(
             backend, basis_gates=["user_gate"], initial_layout=initial_layout
         )
@@ -74,7 +74,7 @@ class TestPassManagerConfig(QiskitTestCase):
 
     def test_from_backendv1_inst_map_is_none(self):
         """Test that from_backend() works with backend that has defaults defined as None."""
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         backend.defaults = lambda: None
         config = PassManagerConfig.from_backend(backend)
         self.assertIsInstance(config, PassManagerConfig)
@@ -91,11 +91,11 @@ class TestPassManagerConfig(QiskitTestCase):
     def test_invalid_user_option(self):
         """Test from_backend() with an invalid user option."""
         with self.assertRaises(TypeError):
-            PassManagerConfig.from_backend(FakeMelbourne(), invalid_option=None)
+            PassManagerConfig.from_backend(Fake20QV1(), invalid_option=None)
 
     def test_str(self):
         """Test string output."""
-        pm_config = PassManagerConfig.from_backend(FakeArmonk())
+        pm_config = PassManagerConfig.from_backend(Fake5QV1())
         # For testing remove instruction schedule map it's str output is non-deterministic
         # based on hash seed
         pm_config.inst_map = None
@@ -114,7 +114,7 @@ class TestPassManagerConfig(QiskitTestCase):
 	sx(0,): 7.111111111111111e-08 s
 	x(0,): 7.111111111111111e-08 s
 	measure(0,): 4.977777777777777e-06 s
-	
+
 	backend_properties: {'backend_name': 'ibmq_armonk',
 	 'backend_version': '2.4.3',
 	 'gates': [{'gate': 'id',

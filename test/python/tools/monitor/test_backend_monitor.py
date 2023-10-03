@@ -22,7 +22,7 @@ import qiskit
 from qiskit import providers
 from qiskit.tools.monitor import backend_overview, backend_monitor
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeProviderFactory, FakeBackend, FakeVigo
+from qiskit.providers.fake_provider import FakeProviderFactory, FakeBackend, Fake5QV1
 
 
 class TestBackendOverview(QiskitTestCase):
@@ -69,7 +69,7 @@ class TestBackendOverview(QiskitTestCase):
             self.prov_backup = None
         providers.ibmq = MagicMock()
 
-    @patch("qiskit.tools.monitor.overview.get_unique_backends", return_value=[FakeVigo()])
+    @patch("qiskit.tools.monitor.overview.get_unique_backends", return_value=[Fake5QV1()])
     def test_backend_overview(self, _):
         """Test backend_overview"""
         with patch("sys.stdout", new=StringIO()) as fake_stdout:
@@ -79,10 +79,10 @@ class TestBackendOverview(QiskitTestCase):
         self.assertIn("Avg. T1:", stdout)
         self.assertIn("Num. Qubits:", stdout)
 
-    @patch("qiskit.tools.monitor.overview.get_unique_backends", return_value=[FakeVigo()])
+    @patch("qiskit.tools.monitor.overview.get_unique_backends", return_value=[Fake5QV1()])
     def test_backend_monitor(self, _):
         """Test backend_monitor"""
-        for back in [FakeVigo()]:
+        for back in [Fake5QV1()]:
             if not back.configuration().simulator:
                 backend = back
                 break

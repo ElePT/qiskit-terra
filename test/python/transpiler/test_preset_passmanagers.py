@@ -32,11 +32,9 @@ from qiskit.transpiler.passes import (
 )
 from qiskit.test import QiskitTestCase
 from qiskit.providers.fake_provider import (
-    FakeBelem,
-    FakeTenerife,
-    FakeMelbourne,
+    Fake5QV1,
+    Fake20QV1,
     FakeJohannesburg,
-    FakeRueschlikon,
     FakeTokyo,
     FakePoughkeepsie,
     FakeLagosV2,
@@ -49,6 +47,50 @@ from qiskit.transpiler.preset_passmanagers import level0, level1, level2, level3
 from qiskit.transpiler.passes import Collect2qBlocks, GatesInBasis
 from qiskit.transpiler.preset_passmanagers.builtin_plugins import OptimizationPassManager
 
+MELBOURNE_CMAP = [
+    [1, 0],
+    [1, 2],
+    [2, 3],
+    [4, 3],
+    [4, 10],
+    [5, 4],
+    [5, 6],
+    [5, 9],
+    [6, 8],
+    [7, 8],
+    [9, 8],
+    [9, 10],
+    [11, 3],
+    [11, 10],
+    [11, 12],
+    [12, 2],
+    [13, 1],
+    [13, 12],
+]
+RUESCHLIKON_CMAP = [
+    [1, 0],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [3, 14],
+    [5, 4],
+    [6, 5],
+    [6, 7],
+    [6, 11],
+    [7, 10],
+    [8, 7],
+    [9, 8],
+    [9, 10],
+    [11, 10],
+    [12, 5],
+    [12, 11],
+    [12, 13],
+    [13, 4],
+    [13, 14],
+    [15, 0],
+    [15, 2],
+    [15, 14],
+]
 
 def mock_get_passmanager_stage(
     stage_name,
@@ -248,7 +290,7 @@ class TestPresetPassManager(QiskitTestCase):
 
     def test_unroll_only_if_not_gates_in_basis(self):
         """Test that the list of passes _unroll only runs if a gate is not in the basis."""
-        qcomp = FakeBelem()
+        qcomp = Fake5QV1()
         qv_circuit = QuantumVolume(3)
         gates_in_basis_true_count = 0
         collect_2q_blocks_count = 0
@@ -285,9 +327,8 @@ class TestTranspileLevels(QiskitTestCase):
         circuit=[emptycircuit, circuit_2532],
         level=[0, 1, 2, 3],
         backend=[
-            FakeTenerife(),
-            FakeMelbourne(),
-            FakeRueschlikon(),
+            Fake5QV1(),
+            Fake20QV1(),
             FakeTokyo(),
             FakePoughkeepsie(),
             None,
@@ -338,7 +379,7 @@ class TestPassesInspection(QiskitTestCase):
         qr = QuantumRegister(5, "q")
         qc = QuantumCircuit(qr)
         qc.cx(qr[2], qr[4])
-        backend = FakeMelbourne()
+        backend = Fake20QV1()
 
         _ = transpile(qc, backend, optimization_level=level, callback=self.callback)
 
@@ -354,7 +395,7 @@ class TestPassesInspection(QiskitTestCase):
         qr = QuantumRegister(5, "q")
         qc = QuantumCircuit(qr)
         qc.cx(qr[2], qr[4])
-        backend = FakeMelbourne()
+        backend = Fake20QV1()
 
         _ = transpile(
             qc,
@@ -684,7 +725,7 @@ class TestInitialLayouts(QiskitTestCase):
             15: qr[2],
         }
 
-        backend = FakeRueschlikon()
+        backend = Fake20QV1()
 
         qc_b = transpile(qc, backend, initial_layout=initial_layout, optimization_level=level)
         qobj = assemble(qc_b)
@@ -733,8 +774,8 @@ class TestInitialLayouts(QiskitTestCase):
             12: ancilla[7],
             13: ancilla[8],
         }
-        backend = FakeMelbourne()
-
+        backend = Fake20QV1()
+        backend.configuration().coupling_map = MELBOURNE_CMAP
         qc_b = transpile(qc, backend, initial_layout=initial_layout, optimization_level=level)
 
         self.assertEqual(qc_b._layout.initial_layout._p2v, final_layout)

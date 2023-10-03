@@ -15,7 +15,7 @@
 """Test InstructionDurations class."""
 
 from qiskit.circuit import Delay, Parameter
-from qiskit.providers.fake_provider import FakeParis, FakeTokyo
+from qiskit.providers.fake_provider import Fake27QV1Pulse, Fake1Q
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.instruction_durations import InstructionDurations
 
@@ -37,14 +37,14 @@ class TestInstructionDurationsClass(QiskitTestCase):
             InstructionDurations(invalid_dic)
 
     def test_from_backend_for_backend_with_dt(self):
-        backend = FakeParis()
+        backend = Fake27QV1Pulse()
         gate = self._find_gate_with_length(backend)
         durations = InstructionDurations.from_backend(backend)
         self.assertGreater(durations.dt, 0)
         self.assertGreater(durations.get(gate, 0), 0)
 
     def test_from_backend_for_backend_without_dt(self):
-        backend = FakeTokyo()
+        backend = Fake1Q()
         gate = self._find_gate_with_length(backend)
         durations = InstructionDurations.from_backend(backend)
         self.assertIsNone(durations.dt)

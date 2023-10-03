@@ -20,7 +20,7 @@ from qiskit import pulse, circuit
 from qiskit.pulse import transforms
 from qiskit.pulse.exceptions import PulseError
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeOpenPulse2Q, FakeArmonk
+from qiskit.providers.fake_provider import FakeOpenPulse2Q
 from qiskit.utils import has_aer
 
 
@@ -380,7 +380,7 @@ class TestBlockOperation(BaseTestBlock):
             pulse.play(pulse.Constant(160, 1.0), pulse.DriveChannel(0))
             pulse.acquire(50, pulse.AcquireChannel(0), pulse.MemorySlot(0))
 
-        backend = FakeArmonk()
+        backend = FakeOpenPulse2Q()
         # TODO: Rewrite test to simulate with qiskit-dynamics
         with self.assertWarns(DeprecationWarning):
             test_result = backend.run(sched_block).result()

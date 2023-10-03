@@ -19,7 +19,7 @@ from qiskit.circuit import ParameterVector, Parameter, Gate, QuantumCircuit
 from qiskit.circuit.library import TwoLocal
 from qiskit.exceptions import QiskitError
 from qiskit.transpiler.passes import TranslateParameterizedGates
-from qiskit.providers.fake_provider import FakeAthensV2
+from qiskit.providers.fake_provider import FakeGeneric
 
 
 class TestTranslateParameterized(QiskitTestCase):
@@ -64,7 +64,7 @@ class TestTranslateParameterized(QiskitTestCase):
 
     def test_target(self):
         """Test unrolling with a target."""
-        target = FakeAthensV2().target
+        target = FakeGeneric(num_qubits=5, replace_cx_with_ecr=False).target
         circuit = TwoLocal(2, "rz", "cx", reps=2, entanglement="linear")
 
         translator = TranslateParameterizedGates(target=target)

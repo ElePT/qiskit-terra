@@ -19,7 +19,7 @@ from qiskit.pulse import builder, macros
 
 from qiskit.pulse.instructions import directives
 from qiskit.pulse.transforms import target_qobj_transform
-from qiskit.providers.fake_provider import FakeMumbaiV2
+from qiskit.providers.fake_provider import FakeGeneric
 from qiskit.pulse import instructions
 from qiskit.test import QiskitTestCase
 
@@ -29,7 +29,7 @@ class TestBuilderV2(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.backend = FakeMumbaiV2()
+        self.backend = FakeGeneric(num_qubits=27)
 
     def assertScheduleEqual(self, program, target):
         """Assert an error when two pulse programs are not equal.

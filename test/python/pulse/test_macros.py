@@ -24,7 +24,7 @@ from qiskit.pulse import (
 )
 from qiskit.pulse import macros
 from qiskit.pulse.exceptions import PulseError
-from qiskit.providers.fake_provider import FakeOpenPulse2Q, FakeHanoi, FakeHanoiV2
+from qiskit.providers.fake_provider import FakeOpenPulse2Q, Fake27QV1Pulse, FakeGeneric
 from qiskit.test import QiskitTestCase
 
 
@@ -34,7 +34,7 @@ class TestMeasure(QiskitTestCase):
     def setUp(self):
         super().setUp()
         self.backend = FakeOpenPulse2Q()
-        self.backend_v2 = FakeHanoiV2()
+        self.backend_v2 = FakeGeneric(num_qubits=27)
         self.inst_map = self.backend.defaults().instruction_schedule_map
 
     def test_measure(self):
@@ -149,13 +149,15 @@ class TestMeasure(QiskitTestCase):
 
     def test_output_with_measure_v1_and_measure_v2(self):
         """Test make outputs of measure_v1 and measure_v2 consistent."""
-        sched_measure_v1 = macros.measure(qubits=[0, 1], backend=FakeHanoi())
+        sched_measure_v1 = macros.measure(qubits=[0, 1], backend=Fake27QV1Pulse())
         sched_measure_v2 = macros.measure(qubits=[0, 1], backend=self.backend_v2)
         self.assertEqual(sched_measure_v1.instructions, sched_measure_v2.instructions)
 
     def test_output_with_measure_v1_and_measure_v2_sched_with_qubit_mem_slots(self):
         """Test make outputs of measure_v1 and measure_v2 with custom qubit_mem_slots consistent."""
-        sched_measure_v1 = macros.measure(qubits=[0], backend=FakeHanoi(), qubit_mem_slots={0: 2})
+        sched_measure_v1 = macros.measure(
+            qubits=[0], backend=Fake27QV1Pulse(), qubit_mem_slots={0: 2}
+        )
         sched_measure_v2 = macros.measure(
             qubits=[0], backend=self.backend_v2, qubit_mem_slots={0: 2}
         )
@@ -164,14 +166,14 @@ class TestMeasure(QiskitTestCase):
     def test_output_with_measure_v1_and_measure_v2_sched_with_meas_map(self):
         """Test make outputs of measure_v1 and measure_v2
         with custom meas_map as list and dict consistent."""
-        num_qubits_list_measure_v1 = list(range(FakeHanoi().configuration().num_qubits))
+        num_qubits_list_measure_v1 = list(range(Fake27QV1Pulse().configuration().num_qubits))
         num_qubits_list_measure_v2 = list(range(self.backend_v2.num_qubits))
         sched_with_meas_map_list_v1 = macros.measure(
-            qubits=[0], backend=FakeHanoi(), meas_map=[num_qubits_list_measure_v1]
+            qubits=[0], backend=Fake27QV1Pulse(), meas_map=[num_qubits_list_measure_v1]
         )
         sched_with_meas_map_dict_v1 = macros.measure(
             qubits=[0],
-            backend=FakeHanoi(),
+            backend=Fake27QV1Pulse(),
             meas_map={0: num_qubits_list_measure_v1, 1: num_qubits_list_measure_v1},
         )
         sched_with_meas_map_list_v2 = macros.measure(
@@ -193,7 +195,7 @@ class TestMeasure(QiskitTestCase):
 
     def test_output_with_multiple_measure_v1_and_measure_v2(self):
         """Test macro - consistent output of multiple qubit measure with backendV1 and backendV2."""
-        sched_measure_v1 = macros.measure(qubits=[0, 1], backend=FakeHanoi())
+        sched_measure_v1 = macros.measure(qubits=[0, 1], backend=Fake27QV1Pulse())
         sched_measure_v2 = macros.measure(qubits=[0, 1], backend=self.backend_v2)
         self.assertEqual(sched_measure_v1.instructions, sched_measure_v2.instructions)
 
@@ -204,7 +206,7 @@ class TestMeasureAll(QiskitTestCase):
     def setUp(self):
         super().setUp()
         self.backend = FakeOpenPulse2Q()
-        self.backend_v2 = FakeHanoiV2()
+        self.backend_v2 = FakeGeneric(num_qubits=27)
         self.inst_map = self.backend.defaults().instruction_schedule_map
 
     def test_measure_all(self):
@@ -215,7 +217,7 @@ class TestMeasureAll(QiskitTestCase):
 
     def test_measure_all_v2(self):
         """Test measure_all function with backendV2."""
-        backend_v1 = FakeHanoi()
+        backend_v1 = Fake27QV1Pulse()
         sched = macros.measure_all(self.backend_v2)
         expected = Schedule(
             backend_v1.defaults().instruction_schedule_map.get(
@@ -226,6 +228,6 @@ class TestMeasureAll(QiskitTestCase):
 
     def test_output_of_measure_all_with_backend_v1_and_v2(self):
         """Test make outputs of measure_all with backendV1 and backendV2 consistent."""
-        sched_measure_v1 = macros.measure_all(backend=FakeHanoi())
+        sched_measure_v1 = macros.measure_all(backend=Fake27QV1Pulse())
         sched_measure_v2 = macros.measure_all(backend=self.backend_v2)
         self.assertEqual(sched_measure_v1.instructions, sched_measure_v2.instructions)

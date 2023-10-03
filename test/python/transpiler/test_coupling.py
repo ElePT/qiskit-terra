@@ -19,11 +19,35 @@ import rustworkx as rx
 
 from qiskit.transpiler import CouplingMap
 from qiskit.transpiler.exceptions import CouplingError
-from qiskit.providers.fake_provider import FakeRueschlikon
 from qiskit.test import QiskitTestCase
 from qiskit.utils import optionals
 
 from ..visualization.visualization import QiskitVisualizationTestCase, path_to_diagram_reference
+
+RUESCHLIKON_CMAP = [
+    [1, 0],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [3, 14],
+    [5, 4],
+    [6, 5],
+    [6, 7],
+    [6, 11],
+    [7, 10],
+    [8, 7],
+    [9, 8],
+    [9, 10],
+    [11, 10],
+    [12, 5],
+    [12, 11],
+    [12, 13],
+    [13, 4],
+    [13, 14],
+    [15, 0],
+    [15, 2],
+    [15, 14],
+]
 
 
 class CouplingTest(QiskitTestCase):
@@ -104,8 +128,7 @@ class CouplingTest(QiskitTestCase):
 
     def test_successful_reduced_map(self):
         """Generate a reduced map"""
-        fake = FakeRueschlikon()
-        cmap = fake.configuration().coupling_map
+        cmap = RUESCHLIKON_CMAP
         coupling_map = CouplingMap(cmap)
         out = coupling_map.reduce([12, 11, 10, 9]).get_edges()
         ans = [(1, 2), (3, 2), (0, 1)]
@@ -113,16 +136,15 @@ class CouplingTest(QiskitTestCase):
 
     def test_bad_reduced_map(self):
         """Generate disconnected reduced map"""
-        fake = FakeRueschlikon()
-        cmap = fake.configuration().coupling_map
+        cmap = RUESCHLIKON_CMAP
+        print(cmap)
         coupling_map = CouplingMap(cmap)
         with self.assertRaises(CouplingError):
             coupling_map.reduce([12, 11, 10, 3])
 
     def test_disconnected_reduced_map_allowed(self):
         """Generate disconnected reduced map but do not error"""
-        fake = FakeRueschlikon()
-        cmap = fake.configuration().coupling_map
+        cmap = RUESCHLIKON_CMAP
         coupling_map = CouplingMap(cmap)
         reduced_map = coupling_map.reduce([12, 11, 10, 3], check_if_connected=False)
         reduced_edges = reduced_map.get_edges()
