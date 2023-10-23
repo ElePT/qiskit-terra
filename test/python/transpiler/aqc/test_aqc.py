@@ -15,10 +15,11 @@ Tests AQC framework using hardcoded and randomly generated circuits.
 from functools import partial
 
 import unittest
+from test.python.transpiler.aqc.sample_data import ORIGINAL_CIRCUIT, INITIAL_THETAS
+
 import numpy as np
 from scipy.optimize import minimize
 
-from test.python.transpiler.aqc.sample_data import ORIGINAL_CIRCUIT, INITIAL_THETAS
 from qiskit.quantum_info import Operator
 from qiskit.test import QiskitTestCase
 from qiskit.transpiler.synthesis.aqc.aqc import AQC
