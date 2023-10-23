@@ -12,6 +12,7 @@
 """
 An AQC synthesis plugin to Qiskit's transpiler.
 """
+from functools import partial
 import numpy as np
 
 from qiskit.converters import circuit_to_dag
@@ -104,7 +105,7 @@ class AQCSynthesisPlugin(UnitarySynthesisPlugin):
 
         # Runtime imports to avoid the overhead of these imports for
         # plugin discovery and only use them if the plugin is run/used
-        from qiskit.algorithms.optimizers import L_BFGS_B
+        from scipy.optimize import minimize
         from qiskit.transpiler.synthesis.aqc.aqc import AQC
         from qiskit.transpiler.synthesis.aqc.cnot_structures import make_cnot_network
         from qiskit.transpiler.synthesis.aqc.cnot_unit_circuit import CNOTUnitCircuit
@@ -125,7 +126,8 @@ class AQCSynthesisPlugin(UnitarySynthesisPlugin):
             depth=depth,
         )
 
-        optimizer = config.get("optimizer", L_BFGS_B(maxiter=1000))
+        default_optimizer = partial(minimize, args=(), method="L-BFGS-B", options={"maxiter": 1000})
+        optimizer = config.get("optimizer", default_optimizer)
         seed = config.get("seed")
         aqc = AQC(optimizer, seed)
 
