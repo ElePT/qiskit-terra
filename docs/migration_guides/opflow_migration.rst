@@ -458,7 +458,7 @@ are used "under the hood" in the original code:
      - :class:`~qiskit.quantum_info.Operator`
 
    * - :class:`~qiskit.opflow.primitive_ops.PauliOp`
-     - :class:`~qiskit.quantum_info.Pauli`. For direct compatibility with classes in ``qiskit.algorithms``,
+     - :class:`~qiskit.quantum_info.Pauli`. For direct compatibility with classes in :mod:`qiskit.algorithms`,
        wrap in :class:`~qiskit.quantum_info.SparsePauliOp`.
 
    * - :class:`~qiskit.opflow.primitive_ops.PauliSumOp`
@@ -1410,7 +1410,7 @@ Gradients
 
 The opflow :mod:`~qiskit.opflow.gradients` framework has been replaced by the new :mod:`qiskit.algorithms.gradients`
 module. The new gradients are **primitive-based subroutines** commonly used by algorithms and applications, which
-can also be executed in a standalone manner. For this reason, they now reside under ``qiskit.algorithms``.
+can also be executed in a standalone manner. For this reason, they now reside under :mod:`qiskit.algorithms`.
 
 The former gradient framework contained base classes, converters and derivatives. The "derivatives"
 followed a factory design pattern, where different methods could be provided via string identifiers
