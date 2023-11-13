@@ -2193,7 +2193,7 @@ class TestPostTranspileIntegration(QiskitTestCase):
             num_qubits=5,
             basis_gates=["cx", "id", "rz", "sx", "x"],
             coupling_map=[[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]],
-            seed=1234,
+            seed=5,
         )
         qubits = 3
         qc = QuantumCircuit(qubits)

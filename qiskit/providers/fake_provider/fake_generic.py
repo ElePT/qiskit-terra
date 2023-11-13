@@ -129,8 +129,8 @@ class GenericTarget(Target):
             self.add_instruction(ContinueLoopOp, name="continue")
 
         # generate block of calibration defaults and add to target
-        # TODO: investigate if the defaults can be generated
-        #       instruction-by-instruction instead of as a block
+        # Note: this could be improved if we could generate and add
+        # calibration defaults per-gate, and not as a block.
         if calibrate_gates is not None:
             defaults = self._generate_calibration_defaults(calibrate_gates)
             self.add_calibration_defaults(defaults)
