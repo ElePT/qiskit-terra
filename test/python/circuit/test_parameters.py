@@ -36,7 +36,7 @@ from qiskit.execute_function import execute
 from qiskit import pulse
 from qiskit.quantum_info import Operator
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeOurense
+from qiskit.providers.fake_provider import Fake5QV1
 from qiskit.tools import parallel_map
 
 
@@ -946,7 +946,7 @@ class TestParameters(QiskitTestCase):
 
         qc.measure(range(5 - 1), range(5 - 1))
 
-        transpile(qc, FakeOurense(), optimization_level=opt_level)
+        transpile(qc, Fake5QV1(), optimization_level=opt_level)
 
     def test_repeated_gates_to_dag_and_back(self):
         """Verify circuits with repeated parameterized gates can be converted

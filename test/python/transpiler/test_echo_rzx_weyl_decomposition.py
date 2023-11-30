@@ -23,7 +23,7 @@ from qiskit.transpiler.passes.optimization.echo_rzx_weyl_decomposition import (
 )
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeParis
+from qiskit.providers.fake_provider import Fake27QV1Pulse
 
 import qiskit.quantum_info as qi
 
@@ -37,7 +37,7 @@ class TestEchoRZXWeylDecomposition(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.backend = FakeParis()
+        self.backend = Fake27QV1Pulse()
         self.inst_map = self.backend.defaults().instruction_schedule_map
 
     def assertRZXgates(self, unitary_circuit, after):

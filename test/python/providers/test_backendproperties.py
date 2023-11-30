@@ -14,7 +14,7 @@
 
 import copy
 
-from qiskit.providers.fake_provider import FakeProvider, FakeOurense
+from qiskit.providers.fake_provider import FakeProvider, Fake5QV1
 from qiskit.test import QiskitTestCase
 from qiskit.providers.exceptions import BackendPropertyError
 
@@ -22,7 +22,7 @@ from qiskit.providers.exceptions import BackendPropertyError
 class BackendpropertiesTestCase(QiskitTestCase):
     """Test usability methods of backend.properties()."""
 
-    backend = FakeOurense()
+    backend = Fake5QV1()
     backend_name = "fake_ourense"
 
     def setUp(self):

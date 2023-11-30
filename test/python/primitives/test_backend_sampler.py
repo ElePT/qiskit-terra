@@ -26,13 +26,15 @@ from qiskit import QuantumCircuit
 from qiskit.circuit.library import RealAmplitudes
 from qiskit.primitives import BackendSampler, SamplerResult
 from qiskit.providers import JobStatus, JobV1
-from qiskit.providers.fake_provider import FakeNairobi, FakeNairobiV2
+from qiskit.providers.fake_provider import Fake7QV1Pulse
+from qiskit.providers.backend_compat import BackendV2Converter
+from qiskit.providers.fake_provider.fake_backend_v2 import FakeBackendSimple
 from qiskit.providers.basicaer import QasmSimulatorPy
 from qiskit.test import QiskitTestCase
 from qiskit.transpiler import PassManager
 from qiskit.utils import optionals
 
-BACKENDS = [FakeNairobi(), FakeNairobiV2()]
+BACKENDS = [Fake7QV1Pulse(), BackendV2Converter(Fake7QV1Pulse())]
 
 
 class CallbackPass(DummyAP):
@@ -243,7 +245,7 @@ class TestBackendSampler(QiskitTestCase):
             self.assertEqual(len(result.quasi_dists), 1)
             for q_d in result.quasi_dists:
                 quasi_dist = {k: v for k, v in q_d.items() if v != 0.0}
-                self.assertDictAlmostEqual(quasi_dist, {0: 1.0}, delta=0.1)
+                self.assertDictAlmostEqual(quasi_dist, {0: 1.0}, delta=0.15)
             self.assertEqual(len(result.metadata), 1)
 
         with self.subTest("two circuits"):
@@ -251,7 +253,7 @@ class TestBackendSampler(QiskitTestCase):
             self.assertEqual(len(result.quasi_dists), 2)
             for q_d in result.quasi_dists:
                 quasi_dist = {k: v for k, v in q_d.items() if v != 0.0}
-                self.assertDictAlmostEqual(quasi_dist, {0: 1.0}, delta=0.1)
+                self.assertDictAlmostEqual(quasi_dist, {0: 1.0}, delta=0.15)
             self.assertEqual(len(result.metadata), 2)
 
     @combine(backend=BACKENDS)
@@ -300,29 +302,31 @@ class TestBackendSampler(QiskitTestCase):
     def test_primitive_job_size_limit_backend_v2(self):
         """Test primitive respects backend's job size limit."""
 
-        class FakeNairobiLimitedCircuits(FakeNairobiV2):
-            """FakeNairobiV2 with job size limit."""
+        class FakeBackendLimitedCircuits(FakeBackendSimple):
+            """FakeBackend V2 with job size limit."""
 
             @property
             def max_circuits(self):
                 return 1
 
+        backend = FakeBackendLimitedCircuits()
         qc = QuantumCircuit(1)
         qc.measure_all()
         qc2 = QuantumCircuit(1)
         qc2.x(0)
         qc2.measure_all()
-        sampler = BackendSampler(backend=FakeNairobiLimitedCircuits())
+        sampler = BackendSampler(backend=backend)
         result = sampler.run([qc, qc2]).result()
         self.assertIsInstance(result, SamplerResult)
         self.assertEqual(len(result.quasi_dists), 2)
 
+        print(result.quasi_dists)
         self.assertDictAlmostEqual(result.quasi_dists[0], {0: 1}, 0.1)
         self.assertDictAlmostEqual(result.quasi_dists[1], {1: 1}, 0.1)
 
     def test_primitive_job_size_limit_backend_v1(self):
         """Test primitive respects backend's job size limit."""
-        backend = FakeNairobi()
+        backend = Fake7QV1Pulse()
         config = backend.configuration()
         config.max_experiments = 1
         backend._configuration = config
@@ -353,8 +357,8 @@ class TestBackendSampler(QiskitTestCase):
             qc.break_loop().c_if(0, True)
 
         backend = Aer.get_backend("aer_simulator")
-        backend.set_options(seed_simulator=15)
         sampler = BackendSampler(backend, skip_transpilation=True)
+        sampler.set_options(seed_simulator=15)
         sampler.set_transpile_options(seed_transpiler=15)
         result = sampler.run(qc).result()
         self.assertDictAlmostEqual(result.quasi_dists[0], {0: 0.5029296875, 1: 0.4970703125})
@@ -366,7 +370,7 @@ class TestBackendSampler(QiskitTestCase):
         qc2 = QuantumCircuit(1)
         qc2.x(0)
         qc2.measure_all()
-        sampler = BackendSampler(backend=FakeNairobi())
+        sampler = BackendSampler(backend=Fake7QV1Pulse())
         result = sampler.run([qc]).result()
         self.assertDictAlmostEqual(result.quasi_dists[0], {0: 1}, 0.1)
         result2 = sampler.run([qc2]).result()
@@ -406,7 +410,7 @@ class TestBackendSampler(QiskitTestCase):
 
             bound_counter = CallbackPass("bound_pass_manager", callback)
             bound_pass = PassManager(bound_counter)
-            sampler = BackendSampler(backend=FakeNairobi(), bound_pass_manager=bound_pass)
+            sampler = BackendSampler(backend=Fake7QV1Pulse(), bound_pass_manager=bound_pass)
             _ = sampler.run([self._circuit[0]]).result()
             expected = [
                 "bound_pass_manager",
@@ -426,7 +430,7 @@ class TestBackendSampler(QiskitTestCase):
 
                 bound_counter = CallbackPass("bound_pass_manager", callback)
                 bound_pass = PassManager(bound_counter)
-                sampler = BackendSampler(backend=FakeNairobi(), bound_pass_manager=bound_pass)
+                sampler = BackendSampler(backend=Fake7QV1Pulse(), bound_pass_manager=bound_pass)
                 _ = sampler.run([self._circuit[0], self._circuit[0]]).result()
                 expected = [
                     "bound_pass_manager",

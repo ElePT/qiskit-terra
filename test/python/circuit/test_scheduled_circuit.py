@@ -17,7 +17,7 @@ from ddt import ddt, data
 from qiskit import QuantumCircuit, QiskitError
 from qiskit import transpile, assemble, BasicAer
 from qiskit.circuit import Parameter
-from qiskit.providers.fake_provider import FakeParis
+from qiskit.providers.fake_provider import Fake65QV1Pulse
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.instruction_durations import InstructionDurations
 
@@ -30,8 +30,8 @@ class TestScheduledCircuit(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.backend_with_dt = FakeParis()
-        self.backend_without_dt = FakeParis()
+        self.backend_with_dt = Fake65QV1Pulse()
+        self.backend_without_dt = Fake65QV1Pulse()
         delattr(self.backend_without_dt.configuration(), "dt")
         self.dt = 2.2222222222222221e-10
         self.simulator_backend = BasicAer.get_backend("qasm_simulator")
@@ -136,7 +136,7 @@ class TestScheduledCircuit(QiskitTestCase):
         qc.delay(1000, 0, unit="ns")  # 4500 [dt]
         qc.measure_all()  # 19584 [dt]
         scheduled = transpile(qc, backend=self.backend_with_dt, scheduling_method="alap")
-        self.assertEqual(scheduled.duration, 23060)
+        self.assertEqual(scheduled.duration, 28740)
 
     def test_transpile_delay_circuit_with_backend(self):
         qc = QuantumCircuit(2)
@@ -146,7 +146,7 @@ class TestScheduledCircuit(QiskitTestCase):
         scheduled = transpile(
             qc, backend=self.backend_with_dt, scheduling_method="alap", layout_method="trivial"
         )
-        self.assertEqual(scheduled.duration, 2082)
+        self.assertEqual(scheduled.duration, 2402)
 
     def test_transpile_delay_circuit_without_backend(self):
         qc = QuantumCircuit(2)
@@ -238,7 +238,7 @@ class TestScheduledCircuit(QiskitTestCase):
         scheduled = transpile(
             qc, backend=self.backend_with_dt, scheduling_method="alap", layout_method="trivial"
         )
-        self.assertEqual(scheduled.duration, 2132)
+        self.assertEqual(scheduled.duration, 2452)
 
         # update durations
         durations = InstructionDurations.from_backend(self.backend_with_dt)

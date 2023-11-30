@@ -28,19 +28,38 @@ from qiskit.transpiler.passes.layout.vf2_layout import VF2Layout, VF2LayoutStopR
 from qiskit._accelerate.error_map import ErrorMap
 from qiskit.converters import circuit_to_dag
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import (
-    FakeTenerife,
-    FakeVigoV2,
-    FakeRueschlikon,
-    FakeManhattan,
-    FakeYorktown,
-    FakeGuadalupeV2,
-)
+from qiskit.providers.fake_provider import Fake65QV1Pulse, Fake5QV1, FakeGeneric
 from qiskit.circuit import Measure
 from qiskit.circuit.library import GraphState, CXGate, XGate, HGate
 from qiskit.transpiler import PassManager, AnalysisPass
 from qiskit.transpiler.target import InstructionProperties
 from qiskit.transpiler.preset_passmanagers.common import generate_embed_passmanager
+
+TENERIFE_CMAP = [[1, 0], [2, 0], [2, 1], [3, 2], [3, 4], [4, 2]]
+RUESCHLIKON_CMAP = [
+    [1, 0],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [3, 14],
+    [5, 4],
+    [6, 5],
+    [6, 7],
+    [6, 11],
+    [7, 10],
+    [8, 7],
+    [9, 8],
+    [9, 10],
+    [11, 10],
+    [12, 5],
+    [12, 11],
+    [12, 13],
+    [13, 4],
+    [13, 14],
+    [15, 0],
+    [15, 2],
+    [15, 14],
+]
 
 
 class LayoutTestCase(QiskitTestCase):
@@ -332,7 +351,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
                q0[0]
         q0[3] ↙     ↘ q0[4]
         """
-        cmap16 = FakeRueschlikon().configuration().coupling_map
+        cmap16 = RUESCHLIKON_CMAP
 
         qr = QuantumRegister(5, "q")
         circuit = QuantumCircuit(qr)
@@ -356,7 +375,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
         ↓    ↑    ↓    ↓    ↑    ↓    ↓   ↑
         0 ← 15 → 14 ← 13 ← 12 → 11 → 10 ← 9
         """
-        cmap16 = CouplingMap(FakeRueschlikon().configuration().coupling_map)
+        cmap16 = CouplingMap(RUESCHLIKON_CMAP)
 
         qr0 = QuantumRegister(4, "q0")
         qr1 = QuantumRegister(5, "q1")
@@ -379,7 +398,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
             ↑ ↙
             4
         """
-        cmap5 = CouplingMap(FakeTenerife().configuration().coupling_map)
+        cmap5 = CouplingMap(TENERIFE_CMAP)
 
         qr = QuantumRegister(4, "q")
         circuit = QuantumCircuit(qr)
@@ -399,7 +418,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
             ↑ ↙                     ↑  ↙
             4                      qr0
         """
-        cmap5 = CouplingMap(FakeTenerife().configuration().coupling_map)
+        cmap5 = CouplingMap(TENERIFE_CMAP)
 
         qr = QuantumRegister(3, "qr")
         circuit = QuantumCircuit(qr)
@@ -423,7 +442,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
           |    |      |      |     |     |    |      |
         q1_2 - q1_3 - q0_0 - 13 - q0_3 - 11 - q1_4 - q0_2
         """
-        cmap16 = CouplingMap(FakeRueschlikon().configuration().coupling_map)
+        cmap16 = CouplingMap(RUESCHLIKON_CMAP)
 
         qr0 = QuantumRegister(4, "q0")
         qr1 = QuantumRegister(5, "q1")
@@ -446,7 +465,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
             ↑ ↙                 |   /
             4                   qr0
         """
-        cmap5 = CouplingMap(FakeTenerife().configuration().coupling_map)
+        cmap5 = CouplingMap(TENERIFE_CMAP)
 
         qr = QuantumRegister(3, "q")
         circuit = QuantumCircuit(qr)
@@ -461,7 +480,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
 
     def test_3q_circuit_vigo_with_custom_scores(self):
         """Test custom ErrorMap from analysis pass are used for scoring."""
-        backend = FakeVigoV2()
+        backend = FakeGeneric(basis_gates=["cx", "id", "rz", "sx", "x"], num_qubits=5)
         target = backend.target
 
         class FakeScore(AnalysisPass):
@@ -508,7 +527,7 @@ class TestVF2LayoutBackend(LayoutTestCase):
     def test_perfect_fit_Manhattan(self):
         """A circuit that fits perfectly in Manhattan (65 qubits)
         See https://github.com/Qiskit/qiskit-terra/issues/5694"""
-        manhattan_cm = FakeManhattan().configuration().coupling_map
+        manhattan_cm = Fake65QV1Pulse().configuration().coupling_map
         cmap65 = CouplingMap(manhattan_cm)
 
         rows = [x[0] for x in manhattan_cm]
@@ -534,7 +553,7 @@ class TestVF2LayoutOther(LayoutTestCase):
         seed_1 = 42
         seed_2 = 45
 
-        cmap5 = FakeTenerife().configuration().coupling_map
+        cmap5 = TENERIFE_CMAP
 
         qr = QuantumRegister(3, "qr")
         circuit = QuantumCircuit(qr)
@@ -563,7 +582,7 @@ class TestVF2LayoutOther(LayoutTestCase):
         """The pass does not handle gates with more than 2 qubits"""
         seed_1 = 42
 
-        cmap5 = FakeTenerife().configuration().coupling_map
+        cmap5 = TENERIFE_CMAP
 
         qr = QuantumRegister(3, "qr")
         circuit = QuantumCircuit(qr)
@@ -615,7 +634,7 @@ class TestMultipleTrials(QiskitTestCase):
 
     def test_with_properties(self):
         """Test it finds the least noise perfect layout with no properties."""
-        backend = FakeYorktown()
+        backend = Fake5QV1()
         qr = QuantumRegister(2)
         qc = QuantumCircuit(qr)
         qc.x(qr)
@@ -629,7 +648,7 @@ class TestMultipleTrials(QiskitTestCase):
 
     def test_max_trials_exceeded(self):
         """Test it exits when max_trials is reached."""
-        backend = FakeYorktown()
+        backend = Fake5QV1()
         qr = QuantumRegister(2)
         qc = QuantumCircuit(qr)
         qc.x(qr)
@@ -649,7 +668,7 @@ class TestMultipleTrials(QiskitTestCase):
 
     def test_time_limit_exceeded(self):
         """Test the pass stops after time_limit is reached."""
-        backend = FakeYorktown()
+        backend = Fake5QV1()
         qr = QuantumRegister(2)
         qc = QuantumCircuit(qr)
         qc.x(qr)
@@ -673,7 +692,7 @@ class TestMultipleTrials(QiskitTestCase):
 
     def test_reasonable_limits_for_simple_layouts(self):
         """Test that the default trials is set to a reasonable number."""
-        backend = FakeManhattan()
+        backend = Fake65QV1Pulse()
         qc = QuantumCircuit(5)
         qc.cx(2, 3)
         qc.cx(0, 1)
@@ -692,7 +711,7 @@ class TestMultipleTrials(QiskitTestCase):
 
     def test_no_limits_with_negative(self):
         """Test that we're not enforcing a trial limit if set to negative."""
-        backend = FakeYorktown()
+        backend = Fake5QV1()
         qc = QuantumCircuit(3)
         qc.h(0)
         cmap = CouplingMap(backend.configuration().coupling_map)
@@ -716,7 +735,7 @@ class TestMultipleTrials(QiskitTestCase):
 
         Reproduce from https://github.com/Qiskit/qiskit-terra/issues/8667
         """
-        backend = FakeGuadalupeV2()
+        backend = FakeGeneric(basis_gates=["cx", "id", "rz", "sx", "x"], num_qubits=16)
         qr = QuantumRegister(16, name="qr")
         cr = ClassicalRegister(5)
         qc = QuantumCircuit(qr, cr)

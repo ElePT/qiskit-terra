@@ -14,7 +14,7 @@ Test the BackendStatus.
 """
 
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeLondon
+from qiskit.providers.fake_provider import Fake5QV1
 
 from qiskit.providers.models import BackendStatus
 
@@ -36,7 +36,7 @@ class TestBackendConfiguration(QiskitTestCase):
 
     def test_fake_backend_status(self):
         """Test backend status for one of the fake backends"""
-        fake_backend = FakeLondon()
+        fake_backend = Fake5QV1()
         backend_status = fake_backend.status()
         self.assertIsInstance(backend_status, BackendStatus)
 

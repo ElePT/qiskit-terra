@@ -17,7 +17,7 @@ import os
 
 from qiskit import QuantumCircuit
 from qiskit.compiler import transpile
-from qiskit.test.mock import FakeToronto
+from qiskit.providers.fake_provider import Fake27QV1Pulse
 
 
 class TranspilerQualitativeBench:
@@ -27,7 +27,7 @@ class TranspilerQualitativeBench:
 
     # pylint: disable=unused-argument
     def setup(self, optimization_level, routing_method, layout_method):
-        self.backend = FakeToronto()
+        self.backend = Fake27QV1Pulse()
         self.qasm_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "qasm"))
 
         self.depth_4gt10_v1_81 = QuantumCircuit.from_qasm_file(

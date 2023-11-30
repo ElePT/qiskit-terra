@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2020.
+# (C) Copyright IBM 2017, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -24,11 +24,59 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.converters import circuit_to_dag
 from qiskit.test import QiskitTestCase
 from qiskit.compiler.transpiler import transpile
-from qiskit.providers.fake_provider import FakeAlmaden, FakeAlmadenV2
-from qiskit.providers.fake_provider import FakeKolkata
-from qiskit.providers.fake_provider import FakeMontreal
+from qiskit.providers.fake_provider import Fake27QV1Pulse, FakeGeneric
+
 from qiskit.transpiler.passes.layout.sabre_pre_layout import SabrePreLayout
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+
+ALMADEN_CMAP = [
+    [0, 1],
+    [1, 0],
+    [1, 2],
+    [1, 6],
+    [2, 1],
+    [2, 3],
+    [3, 2],
+    [3, 4],
+    [3, 8],
+    [4, 3],
+    [5, 6],
+    [5, 10],
+    [6, 1],
+    [6, 5],
+    [6, 7],
+    [7, 6],
+    [7, 8],
+    [7, 12],
+    [8, 3],
+    [8, 7],
+    [8, 9],
+    [9, 8],
+    [9, 14],
+    [10, 5],
+    [10, 11],
+    [11, 10],
+    [11, 12],
+    [11, 16],
+    [12, 7],
+    [12, 11],
+    [12, 13],
+    [13, 12],
+    [13, 14],
+    [13, 18],
+    [14, 9],
+    [14, 13],
+    [15, 16],
+    [16, 11],
+    [16, 15],
+    [16, 17],
+    [17, 16],
+    [17, 18],
+    [18, 13],
+    [18, 17],
+    [18, 19],
+    [19, 18],
+]
 
 
 class TestSabreLayout(QiskitTestCase):
@@ -36,7 +84,7 @@ class TestSabreLayout(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.cmap20 = FakeAlmaden().configuration().coupling_map
+        self.cmap20 = ALMADEN_CMAP
 
     def test_5q_circuit_20q_coupling(self):
         """Test finds layout for 5q circuit on 20q device."""
@@ -160,7 +208,9 @@ class TestSabreLayout(QiskitTestCase):
         circuit.cx(qr1[1], qr0[0])
 
         dag = circuit_to_dag(circuit)
-        target = FakeAlmadenV2().target
+        target = FakeGeneric(
+            num_qubits=20, basis_gates=["cx", "id", "rz", "sx", "x"], coupling_map=self.cmap20
+        ).target
         pass_ = SabreLayout(target, seed=0, swap_trials=32, layout_trials=32)
         pass_.run(dag)
 
@@ -194,7 +244,7 @@ measure q4835[0] -> c982[0];
 rz(0) q4835[1];
 """
         )
-        res = transpile(qc, FakeKolkata(), layout_method="sabre", seed_transpiler=1234)
+        res = transpile(qc, Fake27QV1Pulse(), layout_method="sabre", seed_transpiler=1234)
         self.assertIsInstance(res, QuantumCircuit)
         layout = res._layout.initial_layout
         self.assertEqual(
@@ -246,7 +296,7 @@ barrier q18585[5],q18585[2],q18585[8],q18585[3],q18585[6];
         )
         res = transpile(
             qc,
-            FakeMontreal(),
+            Fake27QV1Pulse(),
             layout_method="sabre",
             routing_method="stochastic",
             seed_transpiler=12345,
@@ -422,14 +472,17 @@ class TestSabrePreLayout(QiskitTestCase):
 
     def test_integration_with_pass_manager(self):
         """Tests SabrePreLayoutIntegration with the rest of PassManager pipeline."""
-        backend = FakeAlmadenV2()
+        cmap20 = ALMADEN_CMAP
+        backend = FakeGeneric(
+            num_qubits=20, basis_gates=["cx", "id", "rz", "sx", "x"], coupling_map=cmap20, seed=42
+        )
         pm = generate_preset_pass_manager(1, backend, seed_transpiler=0)
         pm.pre_layout = PassManager([SabrePreLayout(backend.target)])
         qct = pm.run(self.circuit)
         qct_initial_layout = qct.layout.initial_layout
         self.assertEqual(
             [qct_initial_layout[q] for q in self.circuit.qubits],
-            [1, 6, 5, 10, 11, 12, 16, 17, 18, 13, 14, 9, 8, 3, 2, 0],
+            [8, 9, 14, 13, 18, 19, 17, 16, 11, 10, 5, 6, 1, 2, 3, 7],
         )
 
 

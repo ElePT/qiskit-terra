@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Test the CalibrationBuilder subclasses."""
+"""Test the RZXCalibrationBuilderNoEcho."""
 
 from math import pi, erf
 
@@ -18,12 +18,12 @@ import numpy as np
 from ddt import data, ddt
 from qiskit.converters import circuit_to_dag
 
-from qiskit import circuit, schedule, QiskitError, QuantumCircuit
-from qiskit.circuit import Parameter
-from qiskit.circuit.library.standard_gates import SXGate, RZGate, RXGate
-from qiskit.providers.fake_provider import FakeHanoi  # TODO - include FakeHanoiV2, FakeSherbrooke
-from qiskit.providers.fake_provider import FakeArmonk
-from qiskit.providers.fake_provider import FakeBelemV2
+from qiskit import circuit, schedule, QiskitError
+from qiskit.circuit.library.standard_gates import SXGate, RZGate
+from qiskit.providers.fake_provider import (
+    Fake27QV1Pulse,
+    Fake7QV1Pulse,
+)  # TODO - include FakeHanoiV2, FakeSherbrooke
 from qiskit.pulse import (
     ControlChannel,
     DriveChannel,
@@ -32,18 +32,14 @@ from qiskit.pulse import (
     Play,
     InstructionScheduleMap,
     Schedule,
-    Drag,
-    Square,
 )
 from qiskit.pulse import builder
 from qiskit.pulse.transforms import target_qobj_transform
-from qiskit.dagcircuit import DAGOpNode
 from qiskit.test import QiskitTestCase
-from qiskit.transpiler import PassManager, Target, InstructionProperties
+from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes.calibration.builders import (
     RZXCalibrationBuilder,
     RZXCalibrationBuilderNoEcho,
-    RXCalibrationBuilder,
 )
 
 
@@ -232,7 +228,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
     @data(-np.pi / 4, 0.1, np.pi / 4, np.pi / 2, np.pi)
     def test_rzx_calibration_cr_pulse_stretch(self, theta: float):
         """Test that cross resonance pulse durations are computed correctly."""
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         cr_schedule = inst_map.get("cx", (0, 1))
         with builder.build() as test_sched:
@@ -245,7 +241,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
     @data(-np.pi / 4, 0.1, np.pi / 4, np.pi / 2, np.pi)
     def test_rzx_calibration_rotary_pulse_stretch(self, theta: float):
         """Test that rotary pulse durations are computed correctly."""
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         cr_schedule = inst_map.get("cx", (0, 1))
         with builder.build() as test_sched:
@@ -263,8 +259,15 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
         qc.rzx(theta, 0, 1)
         dag = circuit_to_dag(qc)
 
-        backend = FakeArmonk()
+        backend = Fake7QV1Pulse()
+        # The error is raised when calibrations in multi-qubit
+        # gates are not detected.
+        # We force this by removing the 'cx' entries from the
+        # instruction schedule map.
         inst_map = backend.defaults().instruction_schedule_map
+        for qubits in inst_map.qubits_with_instruction("cx"):
+            inst_map.remove("cx", qubits)
+
         _pass = RZXCalibrationBuilder(inst_map)
 
         qubit_map = {qubit: i for i, qubit in enumerate(dag.qubits)}
@@ -281,7 +284,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
         qc = circuit.QuantumCircuit(2)
         qc.rzx(theta, 0, 1)
 
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         _pass = RZXCalibrationBuilder(inst_map)
         test_qc = PassManager(_pass).run(qc)
@@ -306,7 +309,7 @@ class TestRZXCalibrationBuilder(TestCalibrationBuilder):
         qc = circuit.QuantumCircuit(2)
         qc.rzx(theta, 1, 0)
 
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
         _pass = RZXCalibrationBuilder(inst_map)
         test_qc = PassManager(_pass).run(qc)
@@ -393,7 +396,7 @@ class TestRZXCalibrationBuilderNoEcho(TestCalibrationBuilder):
         qc = circuit.QuantumCircuit(2)
         qc.rzx(theta, 0, 1)
 
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         inst_map = backend.defaults().instruction_schedule_map
 
         _pass = RZXCalibrationBuilderNoEcho(inst_map)
@@ -434,95 +437,3 @@ class TestRZXCalibrationBuilderNoEcho(TestCalibrationBuilder):
             # User warning that says q0 q1 is invalid
             cal_qc = PassManager(pass_).run(rzx_qc)
         self.assertEqual(cal_qc, rzx_qc)
-
-
-@ddt
-class TestRXCalibrationBuilder(QiskitTestCase):
-    """Test RXCalibrationBuilder."""
-
-    def compute_correct_rx_amplitude(self, rx_theta: float, sx_amp: float):
-        """A helper function to compute the amplitude of the bootstrapped RX pulse."""
-        return sx_amp * (np.abs(rx_theta) / (0.5 * np.pi))
-
-    def test_not_supported_if_no_sx_schedule(self):
-        """Test that supported() returns False when the target does not have SX calibration."""
-        empty_target = Target()
-        tp = RXCalibrationBuilder(empty_target)
-        qubits = (0,)
-        node_op = DAGOpNode(RXGate(0.5), qubits, [])
-        self.assertFalse(tp.supported(node_op, qubits))
-
-    def test_not_supported_if_sx_not_drag(self):
-        """Test that supported() returns False when the default SX calibration is not a DRAG."""
-        target = Target()
-        with builder.build() as square_sx_cal:
-            builder.play(Square(amp=0.1, duration=160, phase=0), DriveChannel(0))
-        target.add_instruction(SXGate(), {(0,): InstructionProperties(calibration=square_sx_cal)})
-        tp = RXCalibrationBuilder(target)
-        qubits = (0,)
-        node_op = DAGOpNode(RXGate(0.5), qubits, [])
-        self.assertFalse(tp.supported(node_op, qubits))
-
-    def test_raises_error_when_rotation_angle_not_assigned(self):
-        """Test that get_calibration() fails when the RX gate's rotation angle is
-        an unassigned Parameter, not a number.
-        The QiskitError occurs while trying to typecast the Parameter into a float.
-        """
-        backend = FakeBelemV2()
-        tp = RXCalibrationBuilder(backend.target)
-        qubits = (0,)
-        rx = RXGate(Parameter("theta"))
-        with self.assertRaises(QiskitError):
-            tp.get_calibration(rx, qubits)
-
-    # Note: These input data values should be within [0, pi] because
-    # the required NormalizeRXAngles pass ensures that.
-    @data(0, np.pi / 3, (2 / 3) * np.pi)
-    def test_pulse_schedule(self, theta: float):
-        """Test that get_calibration() returns a schedule with correct amplitude."""
-        backend = FakeBelemV2()
-        dummy_target = Target()
-        sx_amp, sx_beta, sx_sigma, sx_duration, sx_angle = 0.6, 2, 40, 160, 0.5
-        with builder.build(backend=backend) as dummy_sx_cal:
-            builder.play(
-                Drag(
-                    amp=sx_amp, beta=sx_beta, sigma=sx_sigma, duration=sx_duration, angle=sx_angle
-                ),
-                DriveChannel(0),
-            )
-        dummy_target.add_instruction(
-            SXGate(), {(0,): InstructionProperties(calibration=dummy_sx_cal)}
-        )
-
-        tp = RXCalibrationBuilder(dummy_target)
-        test = tp.get_calibration(RXGate(theta), qubits=(0,))
-
-        with builder.build(backend=backend) as correct_rx_schedule:
-            builder.play(
-                Drag(
-                    amp=self.compute_correct_rx_amplitude(rx_theta=theta, sx_amp=sx_amp),
-                    beta=sx_beta,
-                    sigma=sx_sigma,
-                    duration=sx_duration,
-                    angle=0,
-                ),
-                channel=DriveChannel(0),
-            )
-
-        self.assertEqual(test, correct_rx_schedule)
-
-    def test_with_normalizerxangles(self):
-        """Checks that this pass works well with the NormalizeRXAngles pass."""
-        backend = FakeBelemV2()
-        # NormalizeRXAngle pass should also be included because it's a required pass.
-        pm = PassManager(RXCalibrationBuilder(backend.target))
-
-        qc = QuantumCircuit(1)
-        qc.rx(np.pi / 3, 0)
-        qc.rx(np.pi / 2, 0)
-        qc.rx(np.pi, 0)
-
-        # Only RX(pi/3) should get a rx calibration.
-        # The others should be converted to SX and X
-        tc = pm.run(qc)
-        self.assertEqual(len(tc.calibrations["rx"]), 1)

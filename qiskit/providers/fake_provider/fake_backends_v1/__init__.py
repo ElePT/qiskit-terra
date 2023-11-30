@@ -1,0 +1,18 @@
+# This code is part of Qiskit.
+#
+# (C) Copyright IBM 2023.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+
+"""
+Fake ``BackendV1`` backends for testing purposes
+"""
+
+from .fake_backends_v1 import Fake5QV1, Fake20QV1, Fake7QV1Pulse, Fake27QV1Pulse, Fake65QV1Pulse

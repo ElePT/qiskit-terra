@@ -224,6 +224,7 @@ Special fake backends are fake backends that were created for special testing pu
     FakeBackend5QV2
     FakeMumbaiFractionalCX
     ConfigurableFakeBackend
+    FakeGeneric
 
 Fake Backend Base Classes
 =========================
@@ -255,13 +256,16 @@ from .fake_provider import FakeProviderFactory, FakeProviderForBackendV2, FakePr
 # Standard fake backends with IBM Quantum systems snapshots
 from .backends import *
 
-# Special fake backends for special testing perpurposes
+# Special fake backends for special testing purposes
 from .fake_qasm_simulator import FakeQasmSimulator
 from .fake_openpulse_2q import FakeOpenPulse2Q
 from .fake_openpulse_3q import FakeOpenPulse3Q
 from .fake_1q import Fake1Q
 from .fake_backend_v2 import FakeBackendV2, FakeBackend5QV2
 from .fake_mumbai_v2 import FakeMumbaiFractionalCX
+from .fake_generic import FakeGeneric, GenericTarget
+from .fake_backends_v1 import *
 
 # Configurable fake backend
 from .utils.configurable_backend import ConfigurableFakeBackend
+from .fake_generic import FakeGeneric, GenericTarget

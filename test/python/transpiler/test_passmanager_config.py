@@ -15,7 +15,8 @@
 from qiskit import QuantumRegister
 from qiskit.providers.backend import Backend
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeMelbourne, FakeArmonk, FakeHanoi, FakeHanoiV2
+from qiskit.providers.fake_provider import Fake20QV1, Fake27QV1Pulse, FakeGeneric
+from qiskit.providers.fake_provider.fake_backend_v2 import FakeBackendSimple
 from qiskit.providers.basicaer import QasmSimulatorPy
 from qiskit.transpiler.coupling import CouplingMap
 from qiskit.transpiler.passmanager_config import PassManagerConfig
@@ -27,10 +28,10 @@ class TestPassManagerConfig(QiskitTestCase):
     def test_config_from_backend(self):
         """Test from_backend() with a valid backend.
 
-        `FakeHanoi` is used in this testcase. This backend has `defaults` attribute
+        `Fake27QV1Pulse` is used in this testcase. This backend has `defaults` attribute
         that contains an instruction schedule map.
         """
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         config = PassManagerConfig.from_backend(backend)
         self.assertEqual(config.basis_gates, backend.configuration().basis_gates)
         self.assertEqual(config.inst_map, backend.defaults().instruction_schedule_map)
@@ -40,7 +41,7 @@ class TestPassManagerConfig(QiskitTestCase):
 
     def test_config_from_backend_v2(self):
         """Test from_backend() with a BackendV2 instance."""
-        backend = FakeHanoiV2()
+        backend = FakeGeneric(basis_gates=["cx", "id", "rz", "sx", "x"], num_qubits=27)
         config = PassManagerConfig.from_backend(backend)
         self.assertEqual(config.basis_gates, backend.operation_names)
         self.assertEqual(config.inst_map, backend.instruction_schedule_map)
@@ -60,7 +61,7 @@ class TestPassManagerConfig(QiskitTestCase):
         qr = QuantumRegister(4, "qr")
         initial_layout = [None, qr[0], qr[1], qr[2], None, qr[3]]
 
-        backend = FakeMelbourne()
+        backend = Fake20QV1()
         config = PassManagerConfig.from_backend(
             backend, basis_gates=["user_gate"], initial_layout=initial_layout
         )
@@ -74,7 +75,7 @@ class TestPassManagerConfig(QiskitTestCase):
 
     def test_from_backendv1_inst_map_is_none(self):
         """Test that from_backend() works with backend that has defaults defined as None."""
-        backend = FakeHanoi()
+        backend = Fake27QV1Pulse()
         backend.defaults = lambda: None
         config = PassManagerConfig.from_backend(backend)
         self.assertIsInstance(config, PassManagerConfig)
@@ -91,115 +92,38 @@ class TestPassManagerConfig(QiskitTestCase):
     def test_invalid_user_option(self):
         """Test from_backend() with an invalid user option."""
         with self.assertRaises(TypeError):
-            PassManagerConfig.from_backend(FakeMelbourne(), invalid_option=None)
+            PassManagerConfig.from_backend(Fake20QV1(), invalid_option=None)
 
     def test_str(self):
         """Test string output."""
-        pm_config = PassManagerConfig.from_backend(FakeArmonk())
-        # For testing remove instruction schedule map it's str output is non-deterministic
+        pm_config = PassManagerConfig.from_backend(FakeBackendSimple())
+        # For testing remove instruction schedule map, its str output is non-deterministic
         # based on hash seed
         pm_config.inst_map = None
         str_out = str(pm_config)
         expected = """Pass Manager Config:
 	initial_layout: None
-	basis_gates: ['id', 'rz', 'sx', 'x']
+	basis_gates: ['sx', 'x', 'rz', 'cx', 'measure']
 	inst_map: None
 	coupling_map: None
 	layout_method: None
 	routing_method: None
 	translation_method: None
 	scheduling_method: None
-	instruction_durations: id(0,): 7.111111111111111e-08 s
-	rz(0,): 0.0 s
-	sx(0,): 7.111111111111111e-08 s
-	x(0,): 7.111111111111111e-08 s
-	measure(0,): 4.977777777777777e-06 s
-	
-	backend_properties: {'backend_name': 'ibmq_armonk',
-	 'backend_version': '2.4.3',
-	 'gates': [{'gate': 'id',
-	            'name': 'id0',
-	            'parameters': [{'date': datetime.datetime(2021, 3, 15, 0, 38, 15, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_error',
-	                            'unit': '',
-	                            'value': 0.00019769550670970334},
-	                           {'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_length',
-	                            'unit': 'ns',
-	                            'value': 71.11111111111111}],
-	            'qubits': [0]},
-	           {'gate': 'rz',
-	            'name': 'rz0',
-	            'parameters': [{'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_error',
-	                            'unit': '',
-	                            'value': 0},
-	                           {'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_length',
-	                            'unit': 'ns',
-	                            'value': 0}],
-	            'qubits': [0]},
-	           {'gate': 'sx',
-	            'name': 'sx0',
-	            'parameters': [{'date': datetime.datetime(2021, 3, 15, 0, 38, 15, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_error',
-	                            'unit': '',
-	                            'value': 0.00019769550670970334},
-	                           {'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_length',
-	                            'unit': 'ns',
-	                            'value': 71.11111111111111}],
-	            'qubits': [0]},
-	           {'gate': 'x',
-	            'name': 'x0',
-	            'parameters': [{'date': datetime.datetime(2021, 3, 15, 0, 38, 15, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_error',
-	                            'unit': '',
-	                            'value': 0.00019769550670970334},
-	                           {'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	                            'name': 'gate_length',
-	                            'unit': 'ns',
-	                            'value': 71.11111111111111}],
-	            'qubits': [0]}],
-	 'general': [],
-	 'last_update_date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	 'qubits': [[{'date': datetime.datetime(2021, 3, 15, 0, 36, 17, tzinfo=tzoffset(None, -14400)),
-	              'name': 'T1',
-	              'unit': 'us',
-	              'value': 182.6611165336624},
-	             {'date': datetime.datetime(2021, 3, 14, 0, 33, 45, tzinfo=tzoffset(None, -18000)),
-	              'name': 'T2',
-	              'unit': 'us',
-	              'value': 237.8589220110257},
-	             {'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	              'name': 'frequency',
-	              'unit': 'GHz',
-	              'value': 4.971852852405576},
-	             {'date': datetime.datetime(2021, 3, 15, 0, 40, 24, tzinfo=tzoffset(None, -14400)),
-	              'name': 'anharmonicity',
-	              'unit': 'GHz',
-	              'value': -0.34719293148282626},
-	             {'date': datetime.datetime(2021, 3, 15, 0, 35, 20, tzinfo=tzoffset(None, -14400)),
-	              'name': 'readout_error',
-	              'unit': '',
-	              'value': 0.02400000000000002},
-	             {'date': datetime.datetime(2021, 3, 15, 0, 35, 20, tzinfo=tzoffset(None, -14400)),
-	              'name': 'prob_meas0_prep1',
-	              'unit': '',
-	              'value': 0.0234},
-	             {'date': datetime.datetime(2021, 3, 15, 0, 35, 20, tzinfo=tzoffset(None, -14400)),
-	              'name': 'prob_meas1_prep0',
-	              'unit': '',
-	              'value': 0.024599999999999955},
-	             {'date': datetime.datetime(2021, 3, 15, 0, 35, 20, tzinfo=tzoffset(None, -14400)),
-	              'name': 'readout_length',
-	              'unit': 'ns',
-	              'value': 4977.777777777777}]]}
+	instruction_durations: 
+	backend_properties: None
 	approximation_degree: None
 	seed_transpiler: None
 	timing_constraints: None
 	unitary_synthesis_method: default
 	unitary_synthesis_plugin_config: None
-	target: None
+	target: Target
+	Number of qubits: 20
+	Instructions:
+		sx
+		x
+		rz
+		cx
+		measure
 """
-        self.assertEqual(str_out, expected)
+        self.assertEqual(str_out[:-2], expected)

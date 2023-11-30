@@ -22,7 +22,32 @@ from qiskit.circuit.library import CXGate
 from qiskit.transpiler import TranspilerError
 from qiskit.converters import circuit_to_dag
 from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeTenerife, FakeRueschlikon
+
+TENERIFE_CMAP = [[1, 0], [2, 0], [2, 1], [3, 2], [3, 4], [4, 2]]
+RUESCHLIKON_CMAP = [
+    [1, 0],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [3, 14],
+    [5, 4],
+    [6, 5],
+    [6, 7],
+    [6, 11],
+    [7, 10],
+    [8, 7],
+    [9, 8],
+    [9, 10],
+    [11, 10],
+    [12, 5],
+    [12, 11],
+    [12, 13],
+    [13, 4],
+    [13, 14],
+    [15, 0],
+    [15, 2],
+    [15, 14],
+]
 
 
 class TestTrivialLayout(QiskitTestCase):
@@ -30,8 +55,8 @@ class TestTrivialLayout(QiskitTestCase):
 
     def setUp(self):
         super().setUp()
-        self.cmap5 = FakeTenerife().configuration().coupling_map
-        self.cmap16 = FakeRueschlikon().configuration().coupling_map
+        self.cmap5 = TENERIFE_CMAP
+        self.cmap16 = RUESCHLIKON_CMAP
 
     def test_3q_circuit_5q_coupling(self):
         """Test finds trivial layout for 3q circuit on 5q device."""
