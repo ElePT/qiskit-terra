@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2019.
+# (C) Copyright IBM 2017, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -253,9 +253,9 @@ def execute(
 
         .. code-block::
 
-            from qiskit import QuantumCircuit, execute, BasicAer
+            from qiskit import QuantumCircuit, execute, TestProvider
 
-            backend = BasicAer.get_backend('qasm_simulator')
+            backend = TestProvider.get_backend('test_simulator')
 
             qc = QuantumCircuit(5, 5)
             qc.h(0)

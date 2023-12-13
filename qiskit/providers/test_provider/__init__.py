@@ -24,7 +24,7 @@ via the `TestProvider` provider, e.g.:
 
    from qiskit import TestProvider
 
-   backend = TestProvider.get_backend('qasm_simulator')
+   backend = TestProvider.get_backend('test_simulator')
 
 
 Simulators

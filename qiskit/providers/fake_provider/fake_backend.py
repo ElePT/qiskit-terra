@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019.
+# (C) Copyright IBM 2019, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -302,12 +302,12 @@ class FakeBackendV2(BackendV2):
 
         This method runs circuit jobs (an individual or a list of QuantumCircuit
         ) and pulse jobs (an individual or a list of Schedule or ScheduleBlock)
-        using BasicAer or Aer simulator and returns a
+        using TestProvider or Aer simulator and returns a
         :class:`~qiskit.providers.Job` object.
 
         If qiskit-aer is installed, jobs will be run using AerSimulator with
         noise model of the fake backend. Otherwise, jobs will be run using
-        BasicAer simulator without noise.
+        TestProvider simulator without noise.
 
         Currently noisy simulation of a pulse job is not supported yet in
         FakeBackendV2.
@@ -351,7 +351,7 @@ class FakeBackendV2(BackendV2):
             raise QiskitError("Pulse simulation is currently not supported for V2 fake backends.")
         # circuit job
         if not _optionals.HAS_AER:
-            warnings.warn("Aer not found using BasicAer and no noise", RuntimeWarning)
+            warnings.warn("Aer not found using TestProvider and no noise", RuntimeWarning)
         if self.sim is None:
             self._setup_sim()
         self.sim._options = self._options
@@ -565,7 +565,7 @@ class FakeBackend(BackendV1):
             if self.sim is None:
                 self._setup_sim()
             if not _optionals.HAS_AER:
-                warnings.warn("Aer not found using BasicAer and no noise", RuntimeWarning)
+                warnings.warn("Aer not found using TestProvider and no noise", RuntimeWarning)
             self.sim._options = self._options
             job = self.sim.run(circuits, **kwargs)
         return job

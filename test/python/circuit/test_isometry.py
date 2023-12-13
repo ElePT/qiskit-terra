@@ -20,7 +20,6 @@ from ddt import ddt, data
 from qiskit.quantum_info.random import random_unitary
 from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
-from qiskit import execute
 from qiskit.test import QiskitTestCase
 from qiskit.compiler import transpile
 from qiskit.quantum_info import Operator
@@ -64,7 +63,7 @@ class TestIsometry(QiskitTestCase):
         qc = transpile(qc, basis_gates=["u1", "u3", "u2", "cx", "id"])
 
         # Simulate the decomposed gate
-        unitary = Operator(qc)
+        unitary = Operator(qc).data
         iso_from_circuit = unitary[::, 0 : 2**num_q_input]
         iso_desired = iso
 
@@ -104,7 +103,7 @@ class TestIsometry(QiskitTestCase):
         qc = transpile(qc, basis_gates=["u1", "u3", "u2", "cx", "id"])
 
         # Simulate the decomposed gate
-        unitary = Operator(qc)
+        unitary = Operator(qc).data
         iso_from_circuit = unitary[::, 0 : 2**num_q_input]
 
         self.assertTrue(np.allclose(iso_from_circuit, iso))

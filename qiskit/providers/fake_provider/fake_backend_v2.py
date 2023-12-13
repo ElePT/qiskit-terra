@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2021.
+# (C) Copyright IBM 2021, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -181,7 +181,7 @@ class FakeBackend5QV2(BackendV2):
 
 
 class FakeBackendSimple(BackendV2):
-    """A fake simple backend that wraps BasicAer to implement run()."""
+    """A fake simple backend that wraps TestProvider to implement run()."""
 
     def __init__(self):
         super().__init__(

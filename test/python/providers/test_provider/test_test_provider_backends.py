@@ -21,7 +21,7 @@ class TestTestProviderBackends(providers.ProviderTestCase):
     """Qiskit TestProvider Backends (Object) Tests."""
 
     provider_cls = TestProvider
-    backend_name = "qasm_simulator"
+    backend_name = "test_simulator"
 
     def test_deprecated(self):
         """Test that deprecated names map the same backends as the new names."""

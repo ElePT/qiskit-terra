@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2023
+# (C) Copyright IBM 2017, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -44,7 +44,7 @@ class TestTestSimulator(providers.BackendTestCase):
         super().setUp()
 
         self.seed = 88
-        qasm_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "qasm")
+        qasm_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "qasm")
         qasm_filename = os.path.join(qasm_dir, "example.qasm")
         qcirc = QuantumCircuit.from_qasm_file(qasm_filename)
         qcirc.name = "test"

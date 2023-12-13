@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2018.
+# (C) Copyright IBM 2017, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -38,7 +38,7 @@ class TestTestProviderIntegration(QiskitTestCase):
     def test_builtin_simulator_result_fields(self):
         """Test components of a result from a local simulator."""
 
-        self.assertEqual("qasm_simulator", self._result1.backend_name)
+        self.assertEqual("test_simulator", self._result1.backend_name)
         self.assertIsInstance(self._result1.job_id, str)
         self.assertEqual(self._result1.status, "COMPLETED")
         self.assertEqual(self._result1.results[0].status, "DONE")
