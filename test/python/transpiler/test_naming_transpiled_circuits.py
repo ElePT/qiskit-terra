@@ -26,7 +26,7 @@ class TestNamingTranspiledCircuits(QiskitTestCase):
     def setUp(self):
         super().setUp()
         self.basis_gates = ["u1", "u2", "u3", "cx"]
-        self.backend = TestProvider.get_backend("qasm_simulator")
+        self.backend = TestProvider.get_backend("test_simulator")
 
         self.circuit0 = QuantumCircuit(name="circuit0")
         self.circuit1 = QuantumCircuit(name="circuit1")

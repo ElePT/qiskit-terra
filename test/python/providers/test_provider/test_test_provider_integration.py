@@ -32,7 +32,7 @@ class TestTestProviderIntegration(QiskitTestCase):
         self._qc1 = QuantumCircuit(qr, cr, name="qc1")
         self._qc2 = QuantumCircuit(qr, cr, name="qc2")
         self._qc1.measure(qr[0], cr[0])
-        self.backend = TestProvider.get_backend("qasm_simulator")
+        self.backend = TestProvider.get_backend("test_simulator")
         self._result1 = execute(self._qc1, self.backend).result()
 
     def test_builtin_simulator_result_fields(self):

@@ -12,7 +12,6 @@
 
 """TestProvider Backends Test."""
 
-from qiskit import TestProvider
 from qiskit.providers.test_provider import TestProvider
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test import providers

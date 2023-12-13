@@ -32,7 +32,7 @@ class TestJobMonitor(QiskitTestCase):
         qc.h(qreg[0])
         qc.cx(qreg[0], qreg[1])
         qc.measure(qreg, creg)
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         job_sim = execute([qc] * 10, backend)
         output = io.StringIO()
         job_monitor(job_sim, output=output)

@@ -60,7 +60,7 @@ class TestBooleanExpression(QiskitTestCase):
         [result] = (
             execute(
                 expr_circ,
-                backend=TestProvider.get_backend("qasm_simulator"),
+                backend=TestProvider.get_backend("test_simulator"),
                 shots=1,
                 seed_simulator=14,
             )

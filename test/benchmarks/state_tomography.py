@@ -26,7 +26,7 @@ class StateTomographyBench:
     timeout = 120.0
 
     def setup(self, _):
-        self.qasm_backend = qiskit.TestProvider.get_backend("qasm_simulator")
+        self.qasm_backend = qiskit.TestProvider.get_backend("test_simulator")
 
     def time_state_tomography_bell(self, n_qubits):
         meas_qubits = [n_qubits - 2, n_qubits - 1]

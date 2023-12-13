@@ -25,7 +25,7 @@ from qiskit import QiskitError
 from qiskit import QuantumRegister, QuantumCircuit
 from qiskit import transpile
 from qiskit.circuit.library import HGate, QFT, GlobalPhaseGate
-from qiskit.providers.test_provider import QasmSimulatorPy
+from qiskit.providers.test_provider import TestSimulator
 from qiskit.utils import optionals
 
 from qiskit.quantum_info.random import random_unitary, random_statevector, random_pauli
@@ -1168,7 +1168,7 @@ class TestStatevector(QiskitTestCase):
         probs = state.probabilities(qargs)
 
         # Estimate target probs from simulator measurement
-        sim = QasmSimulatorPy()
+        sim = TestSimulator()
         shots = 5000
         seed = 100
         circ = transpile(state_circ, sim)

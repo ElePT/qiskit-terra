@@ -34,7 +34,7 @@ class TestScheduledCircuit(QiskitTestCase):
         self.backend_without_dt = FakeParis()
         delattr(self.backend_without_dt.configuration(), "dt")
         self.dt = 2.2222222222222221e-10
-        self.simulator_backend = TestProvider.get_backend("qasm_simulator")
+        self.simulator_backend = TestProvider.get_backend("test_simulator")
 
     def test_schedule_circuit_when_backend_tells_dt(self):
         """dt is known to transpiler by backend"""

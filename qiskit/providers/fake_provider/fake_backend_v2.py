@@ -31,7 +31,7 @@ from qiskit.circuit.library.standard_gates import (
 from qiskit.providers.backend import BackendV2, QubitProperties
 from qiskit.providers.options import Options
 from qiskit.transpiler import Target, InstructionProperties
-from qiskit.providers.test_provider.test_simulator import QasmSimulatorPy
+from qiskit.providers.test_provider.test_simulator import TestSimulator
 
 
 class FakeBackendV2(BackendV2):
@@ -198,7 +198,7 @@ class FakeBackendSimple(BackendV2):
         self._target.add_instruction(RZGate(self._lam))
         self._target.add_instruction(CXGate())
         self._target.add_instruction(Measure())
-        self._runner = QasmSimulatorPy()
+        self._runner = TestSimulator()
 
     @property
     def target(self):
@@ -210,7 +210,7 @@ class FakeBackendSimple(BackendV2):
 
     @classmethod
     def _default_options(cls):
-        return QasmSimulatorPy._default_options()
+        return TestSimulator._default_options()
 
     def run(self, run_input, **options):
         self._runner._options = self._options

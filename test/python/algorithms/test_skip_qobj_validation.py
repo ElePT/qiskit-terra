@@ -58,7 +58,7 @@ class TestSkipQobjValidation(QiskitAlgorithmsTestCase):
         qc.measure(qr[1], cr[1])
 
         self.qc = qc
-        self.backend = TestProvider.get_backend("qasm_simulator")
+        self.backend = TestProvider.get_backend("test_simulator")
 
     def test_wo_backend_options(self):
         """without backend options test"""
@@ -137,10 +137,12 @@ class TestSkipQobjValidation(QiskitAlgorithmsTestCase):
         with self.assertWarns(DeprecationWarning):
             # TestProvider should fail:
             with self.assertRaises(QiskitError):
-                _ = QuantumInstance(TestProvider.get_backend("qasm_simulator"), noise_model=noise_model)
+                _ = QuantumInstance(
+                    TestProvider.get_backend("test_simulator"), noise_model=noise_model
+                )
 
             with self.assertRaises(QiskitError):
-                quantum_instance = QuantumInstance(TestProvider.get_backend("qasm_simulator"))
+                quantum_instance = QuantumInstance(TestProvider.get_backend("test_simulator"))
                 quantum_instance.set_config(noise_model=noise_model)
 
 

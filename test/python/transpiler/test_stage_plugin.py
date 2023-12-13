@@ -30,7 +30,7 @@ from qiskit.transpiler.preset_passmanagers.plugin import (
     passmanager_stage_plugins,
 )
 from qiskit.transpiler.exceptions import TranspilerError
-from qiskit.providers.test_provider import QasmSimulatorPy
+from qiskit.providers.test_provider import TestSimulator
 
 
 class TestStagePassManagerPlugin(QiskitTestCase):
@@ -111,7 +111,7 @@ class TestBuiltinPlugins(QiskitTestCase):
             optimization_level=optimization_level,
             routing_method=routing_method,
         )
-        backend = QasmSimulatorPy()
+        backend = TestSimulator()
         counts = backend.run(tqc, shots=1000).result().get_counts()
         self.assertDictAlmostEqual(counts, {"0000": 500, "1111": 500}, delta=100)
 
@@ -120,7 +120,7 @@ class TestBuiltinPlugins(QiskitTestCase):
     )
     def test_unitary_synthesis_plugins(self, optimization_level):
         """Test unitary synthesis plugins"""
-        backend = QasmSimulatorPy()
+        backend = TestSimulator()
         with self.assertRaises(TranspilerError):
             _ = generate_preset_pass_manager(
                 optimization_level=optimization_level,

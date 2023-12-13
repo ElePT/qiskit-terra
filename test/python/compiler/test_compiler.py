@@ -33,14 +33,14 @@ class TestCompiler(QiskitTestCase):
     def setUp(self):
         super().setUp()
         self.seed_simulator = 42
-        self.backend = TestProvider.get_backend("qasm_simulator")
+        self.backend = TestProvider.get_backend("test_simulator")
 
     def test_example_multiple_compile(self):
         """Test a toy example compiling multiple circuits.
 
         Pass if the results are correct.
         """
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         coupling_map = [[0, 1], [0, 2], [1, 2], [3, 2], [3, 4], [4, 2]]
 
         qr = QuantumRegister(5)
@@ -82,7 +82,7 @@ class TestCompiler(QiskitTestCase):
         If all correct should return data with the same stats. The circuit may
         be different.
         """
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
 
         qr = QuantumRegister(3, "qr")
         cr = ClassicalRegister(3, "cr")
@@ -114,7 +114,7 @@ class TestCompiler(QiskitTestCase):
 
         Uses the mapper. Pass if results are correct.
         """
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         coupling_map = [
             [0, 1],
             [0, 8],
@@ -202,7 +202,7 @@ class TestCompiler(QiskitTestCase):
         """execute(qc, backend=..., passmanager=...)
         See: https://github.com/Qiskit/qiskit-terra/issues/5037
         """
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         qc = QuantumCircuit(2)
         qc.append(U1Gate(0), [0])
         qc.measure_all()
@@ -257,7 +257,7 @@ class TestCompiler(QiskitTestCase):
         qc.append(U2Gate(3.14, 1.57), [qr[0]])
         qc.barrier(qr)
         qc.measure(qr, cr)
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         qrtrue = transpile(qc, backend, seed_transpiler=8)
         rtrue = backend.run(qrtrue, seed_simulator=42).result()
         qrfalse = PassManager().run(qc)

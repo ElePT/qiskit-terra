@@ -66,9 +66,7 @@ class TestUCGate(QiskitTestCase):
         # Decompose the gate
         qc = transpile(qc, basis_gates=["u1", "u3", "u2", "cx", "id"])
         # Simulate the decomposed gate
-        simulator = TestProvider.get_backend("unitary_simulator")
-        result = execute(qc, simulator).result()
-        unitary = result.get_unitary(qc)
+        unitary = Operator(qc).data
         if up_to_diagonal:
             ucg = UCGate(squs, up_to_diagonal=up_to_diagonal)
             unitary = np.dot(np.diagflat(ucg._get_diagonal()), unitary)
@@ -85,9 +83,7 @@ class TestUCGate(QiskitTestCase):
         uc = UCGate(gates, up_to_diagonal=False)
         qc.append(uc, q)
 
-        simulator = TestProvider.get_backend("unitary_simulator")
-        result = execute(qc, simulator).result()
-        unitary = result.get_unitary(qc)
+        unitary = Operator(qc).data
         unitary_desired = _get_ucg_matrix(gates)
 
         self.assertTrue(np.allclose(unitary_desired, unitary))

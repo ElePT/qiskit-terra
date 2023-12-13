@@ -110,7 +110,7 @@ class CommonUtilitiesMixin:
 
     def create_backend(self):
         """Returns a Backend."""
-        return TestProvider.get_backend("qasm_simulator")
+        return TestProvider.get_backend("test_simulator")
 
     def generate_ground_truth(self, transpiled_result, filename):
         """Generates the expected result into a file.

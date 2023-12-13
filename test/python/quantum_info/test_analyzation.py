@@ -35,7 +35,7 @@ class TestAnalyzation(QiskitTestCase):
         qc.measure(qr[0], cr[0])
         qc.measure(qr[1], cr[1])
         shots = 10000
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         result = qiskit.execute(qc, backend, shots=shots).result()
         counts = result.get_counts(qc)
         observable = {"00": 1, "11": 1, "01": -1, "10": -1}
@@ -60,7 +60,7 @@ class TestAnalyzation(QiskitTestCase):
         qc.measure(qr[1], cr[1])
         qc.measure(qr[2], cr[2])
         shots = 10000
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         result = qiskit.execute(qc, backend, shots=shots).result()
         counts = result.get_counts(qc)
         observable = [1, -1, -1, 1, -1, 1, 1, -1]
@@ -86,7 +86,7 @@ class TestAnalyzation(QiskitTestCase):
         qc.measure(qr[0], cr[0])
         qc.measure(qr[1], cr[1])
         shots = 10000
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         result = qiskit.execute(qc, backend, shots=shots).result()
         counts = result.get_counts(qc)
         observable = [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
@@ -133,7 +133,7 @@ class TestAnalyzation(QiskitTestCase):
         qc.cx(1, 0)
         qc.measure(range(5), range(5))
 
-        sim = TestProvider.get_backend("qasm_simulator")
+        sim = TestProvider.get_backend("test_simulator")
 
         res = qiskit.execute(qc, sim).result()
 
@@ -186,7 +186,7 @@ class TestAnalyzation(QiskitTestCase):
         qc2.cx(1, 0)
         qc2.measure(range(5), range(5))
 
-        sim = TestProvider.get_backend("qasm_simulator")
+        sim = TestProvider.get_backend("test_simulator")
 
         res1 = qiskit.execute(qc, sim).result()
         res2 = qiskit.execute(qc2, sim).result()

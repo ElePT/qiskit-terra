@@ -18,11 +18,11 @@ import numpy as np
 from ddt import ddt, data, unpack
 
 from qiskit.test.base import QiskitTestCase
-from qiskit import TestProvider, execute
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library.arithmetic.piecewise_polynomial_pauli_rotations import (
     PiecewisePolynomialPauliRotations,
 )
+from qiskit.quantum_info import Statevector
 
 
 @ddt
@@ -37,8 +37,7 @@ class TestPiecewisePolynomialRotations(QiskitTestCase):
         circuit.h(list(range(num_state_qubits)))
         circuit.append(function_circuit.to_instruction(), list(range(circuit.num_qubits)))
 
-        backend = TestProvider.get_backend("statevector_simulator")
-        statevector = execute(circuit, backend).result().get_statevector()
+        statevector = Statevector(circuit)
 
         probabilities = defaultdict(float)
         for i, statevector_amplitude in enumerate(statevector):

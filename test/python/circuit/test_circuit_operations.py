@@ -187,7 +187,7 @@ class TestCircuitOperations(QiskitTestCase):
         qc2.measure(qr[1], cr[1])
 
         qc3 = qc1.compose(qc2)
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         shots = 1024
         result = execute(qc3, backend=backend, shots=shots, seed_simulator=78).result()
         counts = result.get_counts()
@@ -209,7 +209,7 @@ class TestCircuitOperations(QiskitTestCase):
         qc2.measure(qr[1], cr[1])
 
         qc3 = qc1 & qc2
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         shots = 1024
         result = execute(qc3, backend=backend, shots=shots, seed_simulator=78).result()
         counts = result.get_counts()
@@ -231,7 +231,7 @@ class TestCircuitOperations(QiskitTestCase):
         qc2.measure(qr[1], cr[1])
 
         qc1 &= qc2
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         shots = 1024
         result = execute(qc1, backend=backend, shots=shots, seed_simulator=78).result()
         counts = result.get_counts()
@@ -281,7 +281,7 @@ class TestCircuitOperations(QiskitTestCase):
         qc1.measure(0, 0)
 
         qc3 = qc1.tensor(qc2)
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         shots = 1024
         result = execute(qc3, backend=backend, shots=shots, seed_simulator=78).result()
         counts = result.get_counts()
@@ -302,7 +302,7 @@ class TestCircuitOperations(QiskitTestCase):
         qc1.measure(0, 0)
 
         qc3 = qc1 ^ qc2
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         shots = 1024
         result = execute(qc3, backend=backend, shots=shots, seed_simulator=78).result()
         counts = result.get_counts()
@@ -323,7 +323,7 @@ class TestCircuitOperations(QiskitTestCase):
         qc1.measure(0, 0)
 
         qc1 ^= qc2
-        backend = TestProvider.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("test_simulator")
         shots = 1024
         result = execute(qc1, backend=backend, shots=shots, seed_simulator=78).result()
         counts = result.get_counts()
