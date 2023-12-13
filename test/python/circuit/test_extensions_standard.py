@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017.
+# (C) Copyright IBM 2017, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -37,7 +37,7 @@ from qiskit.circuit.library import (
     YGate,
     GlobalPhaseGate,
 )
-from qiskit import BasicAer
+from qiskit import TestProvider
 from qiskit.quantum_info import Pauli
 from qiskit.quantum_info.operators.predicates import matrix_equal, is_unitary_matrix
 from qiskit.utils.optionals import HAS_TWEEDLEDUM
@@ -1380,7 +1380,7 @@ class TestStandardMethods(QiskitTestCase):
 
         params = [0.1 * (i + 1) for i in range(10)]
         gate_class_list = Gate.__subclasses__() + ControlledGate.__subclasses__()
-        simulator = BasicAer.get_backend("unitary_simulator")
+        simulator = TestProvider.get_backend("unitary_simulator")
         for gate_class in gate_class_list:
             if hasattr(gate_class, "__abstractmethods__"):
                 # gate_class is abstract
@@ -1413,7 +1413,7 @@ class TestStandardMethods(QiskitTestCase):
             definition_unitary = execute([circ], simulator).result().get_unitary()
 
             with self.subTest(gate_class):
-                # TODO check for exact equality once BasicAer can handle global phase
+                # TODO check for exact equality once TestProvider can handle global phase
                 self.assertTrue(matrix_equal(definition_unitary, gate_matrix, ignore_phase=True))
                 self.assertTrue(is_unitary_matrix(gate_matrix))
 

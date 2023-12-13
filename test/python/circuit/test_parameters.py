@@ -27,7 +27,7 @@ from ddt import data, ddt, named_data
 import qiskit
 import qiskit.circuit.library as circlib
 from qiskit.circuit.library.standard_gates.rz import RZGate
-from qiskit import BasicAer, ClassicalRegister, QuantumCircuit, QuantumRegister
+from qiskit import TestProvider, ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.circuit import Gate, Instruction, Parameter, ParameterExpression, ParameterVector
 from qiskit.circuit.parametertable import ParameterReferences, ParameterTable, ParameterView
 from qiskit.circuit.exceptions import CircuitError
@@ -130,7 +130,7 @@ class TestParameters(QiskitTestCase):
         qr = QuantumRegister(1)
         qc = QuantumCircuit(qr)
         qc.rx(theta, qr)
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
         qc_aer = transpile(qc, backend)
         self.assertIn(theta, qc_aer.parameters)
 
@@ -669,7 +669,7 @@ class TestParameters(QiskitTestCase):
         qr = QuantumRegister(1)
         qc = QuantumCircuit(qr)
         qc.rx(theta, qr)
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
         qc_aer = transpile(qc, backend)
 
         # generate list of circuits
@@ -767,7 +767,7 @@ class TestParameters(QiskitTestCase):
             for i, q in enumerate(qc.qubits[:-1]):
                 qc.cx(qc.qubits[i], qc.qubits[i + 1])
             qc.barrier()
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
         qc_aer = transpile(qc, backend)
         for param in theta:
             self.assertIn(param, qc_aer.parameters)
@@ -798,7 +798,7 @@ class TestParameters(QiskitTestCase):
             qc.append(cxs, qargs=qc.qubits[:-1])
             qc.barrier()
 
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
         qc_aer = transpile(qc, backend)
         for vec in paramvecs:
             for param in vec:
@@ -891,7 +891,7 @@ class TestParameters(QiskitTestCase):
 
         qobj = assemble(
             circuit,
-            backend=BasicAer.get_backend("qasm_simulator"),
+            backend=TestProvider.get_backend("qasm_simulator"),
             parameter_binds=parameter_values,
         )
 
@@ -923,7 +923,7 @@ class TestParameters(QiskitTestCase):
 
         job = execute(
             circuits,
-            BasicAer.get_backend("unitary_simulator"),
+            TestProvider.get_backend("unitary_simulator"),
             shots=512,
             parameter_binds=[{theta: 1}],
         )

@@ -27,7 +27,7 @@ import numpy as np
 import rustworkx as rx
 from ddt import data, ddt, unpack
 
-from qiskit import BasicAer, ClassicalRegister, QuantumCircuit, QuantumRegister, pulse, qasm3, qpy
+from qiskit import TestProvider, ClassicalRegister, QuantumCircuit, QuantumRegister, pulse, qasm3, qpy
 from qiskit.circuit import (
     Clbit,
     ControlFlowOp,
@@ -140,7 +140,7 @@ class TestTranspile(QiskitTestCase):
         coupling_map = [[1, 0]]
         basis_gates = ["u1", "u2", "u3", "cx", "id"]
 
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
         circuit2 = transpile(
             circuit,
             backend=backend,
@@ -409,7 +409,7 @@ class TestTranspile(QiskitTestCase):
 
         If all correct some should exists.
         """
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
 
         qubit_reg = QuantumRegister(2, name="q")
         clbit_reg = ClassicalRegister(2, name="c")
@@ -448,7 +448,7 @@ class TestTranspile(QiskitTestCase):
 
         Check that the top-level `transpile` function returns
         a single circuit."""
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
 
         qubit_reg = QuantumRegister(2)
         clbit_reg = ClassicalRegister(2)
@@ -465,7 +465,7 @@ class TestTranspile(QiskitTestCase):
 
         Check that the transpiler returns a list of two circuits.
         """
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
 
         qubit_reg = QuantumRegister(2)
         clbit_reg = ClassicalRegister(2)
@@ -491,7 +491,7 @@ class TestTranspile(QiskitTestCase):
 
         See https://github.com/Qiskit/qiskit-terra/issues/5260
         """
-        backend = BasicAer.get_backend("qasm_simulator")
+        backend = TestProvider.get_backend("qasm_simulator")
 
         qubit_reg = QuantumRegister(2)
         clbit_reg = ClassicalRegister(2)
@@ -681,7 +681,7 @@ class TestTranspile(QiskitTestCase):
         theta = Parameter("theta")
         qc.rz(theta, qr[0])
 
-        transpiled_qc = transpile(qc, backend=BasicAer.get_backend("qasm_simulator"))
+        transpiled_qc = transpile(qc, backend=TestProvider.get_backend("qasm_simulator"))
 
         expected_qc = QuantumCircuit(qr)
         expected_qc.append(RZGate(theta), [qr[0]])
@@ -715,7 +715,7 @@ class TestTranspile(QiskitTestCase):
         square = theta * theta
         qc.rz(square, qr[0])
 
-        transpiled_qc = transpile(qc, backend=BasicAer.get_backend("qasm_simulator"))
+        transpiled_qc = transpile(qc, backend=TestProvider.get_backend("qasm_simulator"))
 
         expected_qc = QuantumCircuit(qr)
         expected_qc.append(RZGate(square), [qr[0]])

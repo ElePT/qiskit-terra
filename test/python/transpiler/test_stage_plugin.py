@@ -30,7 +30,7 @@ from qiskit.transpiler.preset_passmanagers.plugin import (
     passmanager_stage_plugins,
 )
 from qiskit.transpiler.exceptions import TranspilerError
-from qiskit.providers.basicaer import QasmSimulatorPy
+from qiskit.providers.test_provider import QasmSimulatorPy
 
 
 class TestStagePassManagerPlugin(QiskitTestCase):

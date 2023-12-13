@@ -19,7 +19,7 @@ import numpy as np
 from numpy import pi
 from ddt import ddt, data, unpack
 
-from qiskit import QuantumRegister, QuantumCircuit, execute, BasicAer, QiskitError
+from qiskit import QuantumRegister, QuantumCircuit, execute, TestProvider, QiskitError
 from qiskit.test import QiskitTestCase
 from qiskit.circuit import ControlledGate, Parameter, Gate
 from qiskit.circuit.singleton import SingletonControlledGate, _SingletonControlledGateOverrides
@@ -426,7 +426,7 @@ class TestControlledGate(QiskitTestCase):
 
         job = execute(
             [qcnu1, qu1, qcu1, qc_cu1],
-            BasicAer.get_backend("unitary_simulator"),
+            TestProvider.get_backend("unitary_simulator"),
             basis_gates=["u1", "u2", "u3", "id", "cx"],
         )
         result = job.result()
@@ -487,7 +487,7 @@ class TestControlledGate(QiskitTestCase):
                 if bit == "0":
                     qc.x(q_controls[idx])
 
-            backend = BasicAer.get_backend("unitary_simulator")
+            backend = TestProvider.get_backend("unitary_simulator")
             simulated = execute(qc, backend).result().get_unitary(qc)
 
             base = PhaseGate(lam).to_matrix()
@@ -519,7 +519,7 @@ class TestControlledGate(QiskitTestCase):
         qc.mcx(q_controls, q_target[0], q_ancillas, mode="basic")
 
         # execute the circuit and obtain statevector result
-        backend = BasicAer.get_backend("unitary_simulator")
+        backend = TestProvider.get_backend("unitary_simulator")
         simulated = execute(qc, backend).result().get_unitary(qc)
 
         # compare to expectation
@@ -551,7 +551,7 @@ class TestControlledGate(QiskitTestCase):
 
         qc.mcx(q_controls, q_target[0], q_ancillas, mode="basic-dirty-ancilla")
 
-        simulated = execute(qc, BasicAer.get_backend("unitary_simulator")).result().get_unitary(qc)
+        simulated = execute(qc, TestProvider.get_backend("unitary_simulator")).result().get_unitary(qc)
         if num_ancillas > 0:
             simulated = simulated[: 2 ** (num_controls + 1), : 2 ** (num_controls + 1)]
 
@@ -580,7 +580,7 @@ class TestControlledGate(QiskitTestCase):
 
         qc.mcx(q_controls, q_target[0], q_ancillas, mode="advanced")
 
-        simulated = execute(qc, BasicAer.get_backend("unitary_simulator")).result().get_unitary(qc)
+        simulated = execute(qc, TestProvider.get_backend("unitary_simulator")).result().get_unitary(qc)
         if num_ancillas > 0:
             simulated = simulated[: 2 ** (num_controls + 1), : 2 ** (num_controls + 1)]
 
@@ -601,7 +601,7 @@ class TestControlledGate(QiskitTestCase):
 
         qc.mcx(q_controls, q_target[0], None, mode="noancilla")
 
-        simulated = execute(qc, BasicAer.get_backend("unitary_simulator")).result().get_unitary(qc)
+        simulated = execute(qc, TestProvider.get_backend("unitary_simulator")).result().get_unitary(qc)
 
         base = XGate().to_matrix()
         expected = _compute_control_matrix(base, num_controls)
@@ -662,7 +662,7 @@ class TestControlledGate(QiskitTestCase):
                     gates_used = set(qc.count_ops().keys())
                     self.assertTrue(gates_used.issubset({"x", "u", "p", "cx"}))
 
-            backend = BasicAer.get_backend("unitary_simulator")
+            backend = TestProvider.get_backend("unitary_simulator")
             simulated = execute(qc, backend).result().get_unitary(qc)
 
             if base_gate_name == "x":
@@ -722,7 +722,7 @@ class TestControlledGate(QiskitTestCase):
 
             rot_mat = RYGate(theta).to_matrix()
 
-            backend = BasicAer.get_backend("unitary_simulator")
+            backend = TestProvider.get_backend("unitary_simulator")
             simulated = execute(qc, backend).result().get_unitary(qc)
             if num_ancillas > 0:
                 simulated = simulated[: 2 ** (num_controls + 1), : 2 ** (num_controls + 1)]
@@ -763,7 +763,7 @@ class TestControlledGate(QiskitTestCase):
     @data(3, 4, 5, 8)
     def test_mcx_gates(self, num_ctrl_qubits):
         """Test the mcx gates."""
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         reference = np.zeros(2 ** (num_ctrl_qubits + 1))
         reference[-1] = 1
 

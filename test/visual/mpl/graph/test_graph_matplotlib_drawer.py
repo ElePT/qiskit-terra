@@ -18,7 +18,7 @@ from test.visual import VisualTestUtilities
 from contextlib import contextmanager
 from pathlib import Path
 
-from qiskit import BasicAer, execute
+from qiskit import TestProvider, execute
 from qiskit.test import QiskitTestCase
 from qiskit import QuantumCircuit
 from qiskit.utils import optionals
@@ -101,7 +101,7 @@ class TestGraphMatplotlibDrawer(QiskitTestCase):
         circuit.h(0)
 
         # getting the state using backend
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         result = execute(circuit, backend).result()
         state = result.get_statevector(circuit)
 
@@ -123,7 +123,7 @@ class TestGraphMatplotlibDrawer(QiskitTestCase):
         circuit.x(0)
 
         # getting the state using backend
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         result = execute(circuit, backend).result()
         state = result.get_statevector(circuit)
 
@@ -145,7 +145,7 @@ class TestGraphMatplotlibDrawer(QiskitTestCase):
         circuit.x(0)
 
         # getting the state using backend
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         result = execute(circuit, backend).result()
         state = result.get_statevector(circuit)
 
@@ -167,7 +167,7 @@ class TestGraphMatplotlibDrawer(QiskitTestCase):
         circuit.x(0)
 
         # getting the state using backend
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         result = execute(circuit, backend).result()
         state = result.get_statevector(circuit)
 
@@ -189,7 +189,7 @@ class TestGraphMatplotlibDrawer(QiskitTestCase):
         circuit.x(0)
 
         # getting the state using backend
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         result = execute(circuit, backend).result()
         state = result.get_statevector(circuit)
 
@@ -647,7 +647,7 @@ class TestGraphMatplotlibDrawer(QiskitTestCase):
         circuit.sxdg(2)
 
         # getting the state using backend
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         result = execute(circuit, backend).result()
         state = result.get_statevector(circuit)
 

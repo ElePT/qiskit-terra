@@ -185,7 +185,7 @@ class QiskitTestCase(BaseQiskitTestCase):
         super().tearDown()
         # Reset the default providers, as in practice they acts as a singleton
         # due to importing the instances from the top-level qiskit namespace.
-        from qiskit.providers.basicaer import BasicAer
+        from qiskit.providers.test_provider import BasicAer
 
         BasicAer._backends = BasicAer._verify_backends()
 

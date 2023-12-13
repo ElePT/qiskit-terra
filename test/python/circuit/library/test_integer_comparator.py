@@ -17,7 +17,7 @@ import numpy as np
 from ddt import ddt, data, unpack
 
 from qiskit.test.base import QiskitTestCase
-from qiskit import BasicAer, execute
+from qiskit import TestProvider, execute
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import IntegerComparator
 
@@ -33,7 +33,7 @@ class TestIntegerComparator(QiskitTestCase):
         qc.append(comp, list(range(comp.num_qubits)))  # add comparator
 
         # run simulation
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         statevector = execute(qc, backend).result().get_statevector()
         for i, amplitude in enumerate(statevector):
             prob = np.abs(amplitude) ** 2

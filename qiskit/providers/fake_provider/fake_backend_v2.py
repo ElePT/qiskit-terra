@@ -31,7 +31,7 @@ from qiskit.circuit.library.standard_gates import (
 from qiskit.providers.backend import BackendV2, QubitProperties
 from qiskit.providers.options import Options
 from qiskit.transpiler import Target, InstructionProperties
-from qiskit.providers.basicaer.qasm_simulator import QasmSimulatorPy
+from qiskit.providers.test_provider.test_simulator import QasmSimulatorPy
 
 
 class FakeBackendV2(BackendV2):

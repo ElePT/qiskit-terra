@@ -70,7 +70,7 @@ import qiskit.circuit.measure
 import qiskit.circuit.reset
 
 # Please note these are global instances, not modules.
-from qiskit.providers.basicaer import BasicAer
+from qiskit.providers.test_provider import TestProvider
 
 _config = _user_config.get_config()
 
@@ -180,7 +180,7 @@ IBMQ = IBMQWrapper()
 __all__ = [
     "Aer",
     "AncillaRegister",
-    "BasicAer",
+    "TestProvider",
     "ClassicalRegister",
     "IBMQ",
     "MissingOptionalLibraryError",

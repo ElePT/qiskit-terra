@@ -16,7 +16,7 @@
 import unittest
 import numpy as np
 
-from qiskit import QuantumCircuit, QuantumRegister, BasicAer, execute, assemble
+from qiskit import QuantumCircuit, QuantumRegister, TestProvider, execute, assemble
 
 from qiskit import QiskitError
 from qiskit.test import QiskitTestCase
@@ -51,7 +51,7 @@ class TestDiagonalGate(QiskitTestCase):
                 # Decompose the gate
                 qc = transpile(qc, basis_gates=["u1", "u3", "u2", "cx", "id"], optimization_level=0)
                 # Simulate the decomposed gate
-                simulator = BasicAer.get_backend("unitary_simulator")
+                simulator = TestProvider.get_backend("unitary_simulator")
                 result = execute(qc, simulator).result()
                 unitary = result.get_unitary(qc)
                 unitary_desired = _get_diag_gate_matrix(diag)

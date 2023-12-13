@@ -30,7 +30,7 @@ from qiskit.providers import BackendV2, BackendV1
 from qiskit import pulse
 from qiskit.exceptions import QiskitError
 from qiskit.utils import optionals as _optionals
-from qiskit.providers import basicaer
+from qiskit.providers import test_provider
 from qiskit.transpiler import Target
 from qiskit.providers.backend_compat import convert_to_target
 
@@ -129,7 +129,7 @@ class FakeBackendV2(BackendV2):
                 self.set_options(noise_model=noise_model)
 
         else:
-            self.sim = basicaer.QasmSimulatorPy()
+            self.sim = test_provider.QasmSimulatorPy()
 
     def _get_conf_dict_from_json(self):
         if not self.conf_filename:
@@ -203,7 +203,7 @@ class FakeBackendV2(BackendV2):
 
             return aer.AerSimulator._default_options()
         else:
-            return basicaer.QasmSimulatorPy._default_options()
+            return test_provider.QasmSimulatorPy._default_options()
 
     @property
     def dtm(self) -> float:
@@ -469,7 +469,7 @@ class FakeBackend(BackendV1):
                 # it when run() is called
                 self.set_options(noise_model=noise_model)
         else:
-            self.sim = basicaer.QasmSimulatorPy()
+            self.sim = test_provider.QasmSimulatorPy()
 
     def properties(self):
         """Return backend properties"""
@@ -530,7 +530,7 @@ class FakeBackend(BackendV1):
 
             return aer.QasmSimulator._default_options()
         else:
-            return basicaer.QasmSimulatorPy._default_options()
+            return test_provider.QasmSimulatorPy._default_options()
 
     def run(self, run_input, **kwargs):
         """Main job in simulator"""

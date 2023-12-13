@@ -53,7 +53,7 @@ from qiskit.circuit.library import (
     RZGate,
     UnitaryGate,
 )
-from qiskit.providers.basicaer import UnitarySimulatorPy
+from qiskit.providers.test_provider import UnitarySimulatorPy
 from qiskit.quantum_info.operators import Operator
 from qiskit.quantum_info.random import random_unitary
 from qiskit.quantum_info.synthesis.one_qubit_decompose import OneQubitEulerDecomposer

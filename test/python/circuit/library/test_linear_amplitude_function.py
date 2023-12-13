@@ -18,7 +18,7 @@ from collections import defaultdict
 from ddt import ddt, data, unpack
 import numpy as np
 
-from qiskit import BasicAer, execute
+from qiskit import TestProvider, execute
 from qiskit.test.base import QiskitTestCase
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import LinearAmplitudeFunction
@@ -37,7 +37,7 @@ class TestLinearAmplitudeFunctional(QiskitTestCase):
         circuit.h(list(range(num_state_qubits)))
         circuit.append(function_circuit.to_instruction(), list(range(circuit.num_qubits)))
 
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         statevector = execute(circuit, backend).result().get_statevector()
 
         probabilities = defaultdict(float)

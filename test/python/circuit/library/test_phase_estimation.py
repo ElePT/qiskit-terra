@@ -17,7 +17,7 @@ import unittest
 import numpy as np
 
 from qiskit.test.base import QiskitTestCase
-from qiskit import BasicAer, execute
+from qiskit import TestProvider, execute
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import PhaseEstimation, QFT
 from qiskit.quantum_info import Statevector
@@ -66,7 +66,7 @@ class TestPhaseEstimation(QiskitTestCase):
         circuit.compose(pec, inplace=True)
         # TODO use Statevector for simulation once Qiskit/qiskit-terra#4681 is resolved
         # actual = Statevector.from_instruction(circuit).data
-        backend = BasicAer.get_backend("statevector_simulator")
+        backend = TestProvider.get_backend("statevector_simulator")
         actual = execute(circuit, backend).result().get_statevector()
 
         np.testing.assert_almost_equal(reference, actual)

@@ -15,7 +15,7 @@ import unittest
 
 import numpy as np
 
-from qiskit.providers.basicaer import StatevectorSimulatorPy
+from qiskit.providers.test_provider import StatevectorSimulatorPy
 from qiskit.test import ReferenceCircuits
 from qiskit.test import providers
 from qiskit import QuantumRegister, QuantumCircuit, execute
@@ -24,7 +24,7 @@ from qiskit.quantum_info import state_fidelity
 
 
 class StatevectorSimulatorTest(providers.BackendTestCase):
-    """Test BasicAer statevector simulator."""
+    """Test TestProvider statevector simulator."""
 
     backend_cls = StatevectorSimulatorPy
     circuit = None

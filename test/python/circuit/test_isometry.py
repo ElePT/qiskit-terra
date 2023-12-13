@@ -18,7 +18,7 @@ import numpy as np
 from ddt import ddt, data
 
 from qiskit.quantum_info.random import random_unitary
-from qiskit import BasicAer
+from qiskit import TestProvider
 from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
 from qiskit import execute
@@ -65,7 +65,7 @@ class TestIsometry(QiskitTestCase):
         qc = transpile(qc, basis_gates=["u1", "u3", "u2", "cx", "id"])
 
         # Simulate the decomposed gate
-        simulator = BasicAer.get_backend("unitary_simulator")
+        simulator = TestProvider.get_backend("unitary_simulator")
         result = execute(qc, simulator).result()
         unitary = result.get_unitary(qc)
         iso_from_circuit = unitary[::, 0 : 2**num_q_input]
@@ -107,7 +107,7 @@ class TestIsometry(QiskitTestCase):
         qc = transpile(qc, basis_gates=["u1", "u3", "u2", "cx", "id"])
 
         # Simulate the decomposed gate
-        simulator = BasicAer.get_backend("unitary_simulator")
+        simulator = TestProvider.get_backend("unitary_simulator")
         result = execute(qc, simulator).result()
         unitary = result.get_unitary(qc)
         iso_from_circuit = unitary[::, 0 : 2**num_q_input]

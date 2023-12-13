@@ -25,7 +25,7 @@ from qiskit import QiskitError
 from qiskit import QuantumRegister, QuantumCircuit
 from qiskit import transpile
 from qiskit.circuit.library import HGate, QFT, GlobalPhaseGate
-from qiskit.providers.basicaer import QasmSimulatorPy
+from qiskit.providers.test_provider import QasmSimulatorPy
 from qiskit.utils import optionals
 
 from qiskit.quantum_info.random import random_unitary, random_statevector, random_pauli

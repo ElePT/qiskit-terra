@@ -12,19 +12,19 @@
 
 """
 ====================================================================
-BasicAer: Python-based Simulators (:mod:`qiskit.providers.basicaer`)
+TestProvider: Python-based Simulators (:mod:`qiskit.providers.test_provider`)
 ====================================================================
 
-.. currentmodule:: qiskit.providers.basicaer
+.. currentmodule:: qiskit.providers.test_provider
 
 A module of Python-based quantum simulators.  Simulators are accessed
-via the `BasicAer` provider, e.g.:
+via the `TestProvider` provider, e.g.:
 
 .. code-block::
 
-   from qiskit import BasicAer
+   from qiskit import TestProvider
 
-   backend = BasicAer.get_backend('qasm_simulator')
+   backend = TestProvider.get_backend('qasm_simulator')
 
 
 Simulators
@@ -43,7 +43,7 @@ Provider
 .. autosummary::
    :toctree: ../stubs/
 
-   BasicAerProvider
+   TestProvider
 
 Job Class
 =========
@@ -51,7 +51,7 @@ Job Class
 .. autosummary::
    :toctree: ../stubs/
 
-   BasicAerJob
+   TestProviderJob
 
 Exceptions
 ==========
@@ -59,15 +59,14 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   BasicAerError
+   TestProviderError
 """
 
-from .basicaerprovider import BasicAerProvider
-from .basicaerjob import BasicAerJob
-from .qasm_simulator import QasmSimulatorPy
-from .statevector_simulator import StatevectorSimulatorPy
-from .unitary_simulator import UnitarySimulatorPy
-from .exceptions import BasicAerError
+from .test_provider import TestProvider
+from .test_provider_job import TestProviderJob
+from .test_simulator import TestSimulator
+from .exceptions import TestProviderError
 
 # Global instance to be used as the entry point for convenience.
-BasicAer = BasicAerProvider()
+
+TestProvider = TestProvider()

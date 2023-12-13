@@ -10,9 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Test executing multiple-register circuits on BasicAer."""
+"""Test executing multiple-register circuits on TestProvider."""
 
-from qiskit import BasicAer, execute
+from qiskit import TestProvider, execute
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.quantum_info import Operator, Statevector, process_fidelity, state_fidelity
 from qiskit.test import QiskitTestCase
@@ -37,18 +37,18 @@ class TestCircuitMultiRegs(QiskitTestCase):
 
         qc = circ.compose(meas)
 
-        backend_sim = BasicAer.get_backend("qasm_simulator")
+        backend_sim = TestProvider.get_backend("qasm_simulator")
 
         result = execute(qc, backend_sim, seed_transpiler=34342).result()
         counts = result.get_counts(qc)
 
         target = {"01 10": 1024}
 
-        backend_sim = BasicAer.get_backend("statevector_simulator")
+        backend_sim = TestProvider.get_backend("statevector_simulator")
         result = execute(circ, backend_sim, seed_transpiler=3438).result()
         state = result.get_statevector(circ)
 
-        backend_sim = BasicAer.get_backend("unitary_simulator")
+        backend_sim = TestProvider.get_backend("unitary_simulator")
         result = execute(circ, backend_sim, seed_transpiler=3438).result()
         unitary = Operator(result.get_unitary(circ))
 

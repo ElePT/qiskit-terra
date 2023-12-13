@@ -10,20 +10,20 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""BasicAer provider integration tests."""
+"""TestProvider provider integration tests."""
 
 import unittest
 
-from qiskit import BasicAer
+from qiskit import TestProvider
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit import execute
 from qiskit.result import Result
-from qiskit.providers.basicaer import BasicAerError
+from qiskit.providers.test_provider import TestProviderError
 from qiskit.test import QiskitTestCase
 
 
-class TestBasicAerIntegration(QiskitTestCase):
-    """Qiskit BasicAer simulator integration tests."""
+class TestTestProviderIntegration(QiskitTestCase):
+    """Qiskit TestProvider simulator integration tests."""
 
     def setUp(self):
         super().setUp()
@@ -32,7 +32,7 @@ class TestBasicAerIntegration(QiskitTestCase):
         self._qc1 = QuantumCircuit(qr, cr, name="qc1")
         self._qc2 = QuantumCircuit(qr, cr, name="qc2")
         self._qc1.measure(qr[0], cr[0])
-        self.backend = BasicAer.get_backend("qasm_simulator")
+        self.backend = TestProvider.get_backend("qasm_simulator")
         self._result1 = execute(self._qc1, self.backend).result()
 
     def test_builtin_simulator_result_fields(self):
@@ -71,11 +71,11 @@ class TestBasicAerIntegration(QiskitTestCase):
         self.assertIsInstance(result, Result)
 
     def test_basicaer_num_qubits(self):
-        """Test BasicAerError is raised if num_qubits too large to simulate."""
+        """Test TestProviderError is raised if num_qubits too large to simulate."""
         qc = QuantumCircuit(50, 1)
         qc.x(0)
         qc.measure(0, 0)
-        with self.assertRaises(BasicAerError):
+        with self.assertRaises(TestProviderError):
             execute(qc, self.backend)
 
 

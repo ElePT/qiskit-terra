@@ -23,7 +23,7 @@ import numpy as np
 from qiskit import execute
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile, assemble
-from qiskit.providers.basicaer import QasmSimulatorPy
+from qiskit.providers.test_provider import QasmSimulatorPy
 from qiskit.test import providers
 from qiskit.qasm2 import dumps
 
@@ -35,7 +35,7 @@ class StreamHandlerRaiseException(StreamHandler):
         raise sys.exc_info()
 
 
-class TestBasicAerQasmSimulator(providers.BackendTestCase):
+class TestTestProviderQasmSimulator(providers.BackendTestCase):
     """Test the Basic qasm_simulator."""
 
     backend_cls = QasmSimulatorPy
