@@ -260,3 +260,47 @@ class TestTranspile(QiskitTestCase):
         # custom input ignored
         self.assertEqual(scheduled.duration, original_duration)
         # self.assertEqual(scheduled.duration, original_duration * 2)
+
+    def test_backend_properties(self):
+        """Test that scheduling-related loose transpile constraints
+        work with BackendV1."""
+
+        backend_v1 = Fake27QPulseV1()
+        backend_v2 = BackendV2Converter(backend_v1)
+        target = backend_v2.target
+
+        from qiskit.providers.fake_provider import GenericBackendV2
+
+        fake_backend = GenericBackendV2(num_qubits=7, calibrate_instructions=True, seed=42)
+
+        from qiskit.transpiler.target import target_to_backend_properties
+        properties = target_to_backend_properties(fake_backend.target)
+
+        # self.assertEqual(0, target["rz"][(0,)].error)
+        # self.assertEqual(0, target["rz"][(0,)].duration)
+
+        # qc = QuantumCircuit(1, 1)
+        # qc.x(0)
+        # qc.measure(0, 0)
+        qubits = 3
+        qc = QuantumCircuit(qubits)
+        for i in range(5):
+            qc.cx(i % qubits, int(i + qubits / 2) % qubits)
+        original_duration = 3504
+
+        def callback_func(**kwargs):
+            pass_ = kwargs['pass_']
+            dag = kwargs['dag']
+            time = kwargs['time']
+            property_set = kwargs['property_set']
+            count = kwargs['count']
+            print(pass_)
+
+        # halve dt in sec = double duration in dt
+        scheduled = transpile(
+            qc, backend=backend_v1, scheduling_method="asap", backend_properties=properties, seed_transpiler=42, callback=callback_func
+        )
+        print(scheduled.duration, original_duration * 2)
+        # custom input ignored
+        self.assertEqual(scheduled.duration, original_duration)
+        # self.assertEqual(scheduled.duration, original_duration * 2)
