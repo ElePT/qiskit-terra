@@ -333,60 +333,45 @@ def transpile(  # pylint: disable=too-many-return-statements
 
     _skip_target = False
     _given_inst_map = bool(inst_map)  # check before inst_map is overwritten
+
+    coupling_map = _parse_coupling_map(coupling_map, backend)
+    inst_map = _parse_inst_map(inst_map, backend)
+    _check_circuits_coupling_map(circuits, coupling_map, backend)
+    timing_constraints = _parse_timing_constraints(backend, timing_constraints)
     # If a target is specified have it override any implicit selections from a backend
     if target is not None:
         new_target = target
-        # if coupling_map is None:
-        #     coupling_map = target.build_coupling_map()
-        # if basis_gates is None:
-        #     basis_gates = list(target.operation_names)
-        # if instruction_durations is None:
-        #     instruction_durations = target.durations()
-        # if inst_map is None:
-        #     inst_map = target.instruction_schedule_map()
-        # if dt is None:
-        #     dt = target.dt
-        # if timing_constraints is None:
-        #     timing_constraints = target.timing_constraints()
-        # if backend_properties is None:
-        #     backend_properties = target_to_backend_properties(target)
 
     elif backend is not None:
-        new_target = getattr(backend, "target", None)
-        # If target is not specified and any hardware constraint object is
-        # manually specified then do not use the target from the backend as
-        # it is invalidated by a custom basis gate list, custom coupling map,
-        # custom dt or custom instruction_durations
-        if basis_gates is not None:
+        instructions = basis_gates or backend.operation_names
+        for inst in inst_map.instructions:
+            for qubit in inst_map.qubits_with_instruction(inst):
+                entry = inst_map._get_calibration_entry(inst, qubit)
+                if entry.user_provided:
+                    instructions.remove(inst)
 
-        if (
-            basis_gates is not None
-            or coupling_map is not None
-            or dt is not None
-            or instruction_durations is not None
-            or inst_map is not None
-        ):
-            _skip_target = True
+        new_target = Target.from_configuration(
+            basis_gates = instructions,
+            num_qubits = backend.num_qubits,
+            coupling_map = coupling_map,
+            inst_map = inst_map if not inst_map.has_custom_gate() else None,
+            backend_properties = backend_properties or target_to_backend_properties(backend.target),
+            concurrent_measurements = backend.target.concurrent_measurements,
+            dt = dt or backend.target.dt,
+            timing_constraints=timing_constraints,
+            custom_name_mapping = None,
+        )
 
+    if _given_inst_map and inst_map.has_custom_gate() and new_target is not None:
+        new_target.update_from_instruction_schedule_map(inst_map)
 
+    print("constraints: ", new_target.timing_constraints())
+    # print("cmap", new_target.build_coupling_map())
     initial_layout = _parse_initial_layout(initial_layout)
-    coupling_map = _parse_coupling_map(coupling_map, backend)
     approximation_degree = _parse_approximation_degree(approximation_degree)
-
     output_name = _parse_output_name(output_name, circuits)
-    inst_map = _parse_inst_map(inst_map, backend)
 
-    _check_circuits_coupling_map(circuits, coupling_map, backend)
-
-    timing_constraints = _parse_timing_constraints(backend, timing_constraints)
-
-    if _given_inst_map and inst_map.has_custom_gate() and target is not None:
-        # Do not mutate backend target
-        target = copy.deepcopy(target)
-        target.update_from_instruction_schedule_map(inst_map)
-
-
-    if instruction_durations or dt and _skip_target == True:
+    if instruction_durations or dt and _skip_target==True:
         # If durations are provided and there is more than one circuit
         # we need to serialize the execution because the full durations
         # is dependent on the circuit calibrations which are per circuit
@@ -398,13 +383,13 @@ def transpile(  # pylint: disable=too-many-return-statements
                 )
                 pm = generate_preset_pass_manager(
                     optimization_level,
-                    backend=backend,
-                    target=target,
-                    basis_gates=basis_gates,
-                    inst_map=inst_map,
+                    # backend=backend,
+                    target=new_target,
+                    # basis_gates=basis_gates,
+                    # inst_map=inst_map,
                     coupling_map=coupling_map,
                     instruction_durations=instruction_durations,
-                    backend_properties=backend_properties,
+                    # backend_properties=backend_properties,
                     timing_constraints=timing_constraints,
                     initial_layout=initial_layout,
                     layout_method=layout_method,
@@ -433,13 +418,13 @@ def transpile(  # pylint: disable=too-many-return-statements
 
     pm = generate_preset_pass_manager(
         optimization_level,
-        backend=backend,
-        target=target,
-        basis_gates=basis_gates,
-        inst_map=inst_map,
-        coupling_map=coupling_map,
+        # backend=backend,
+        target=new_target,
+        # basis_gates=basis_gates,
+        # inst_map=inst_map,
+        # coupling_map=coupling_map,
         instruction_durations=instruction_durations,
-        backend_properties=backend_properties,
+        # backend_properties=backend_properties,
         timing_constraints=timing_constraints,
         initial_layout=initial_layout,
         layout_method=layout_method,
