@@ -6167,6 +6167,25 @@ impl DAGCircuit {
         }
         Ok(())
     }
+
+     /// Get the set of "op" nodes with the given name.
+    pub fn rust_named_nodes(&self, names: Vec<String>) -> Vec<(NodeIndex, &NodeType)> {
+            // let mut names_set: HashSet<String> = HashSet::with_capacity(names.len());
+            let names_set: HashSet<String> = names.into_iter().collect();
+            // for name_obj in names {
+            //     names_set.insert(*name_obj);
+            // }
+            let mut result = Vec::new();
+            for (id, weight) in self.dag.node_references() {
+                if let NodeType::Operation(ref packed) = weight {
+                    if names_set.contains(packed.op.name()) {
+                        result.push((id, weight));
+                    }
+                }
+            }
+            result
+        }
+    
 }
 
 /// Add to global phase. Global phase can only be Float or ParameterExpression so this

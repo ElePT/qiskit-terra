@@ -14,6 +14,7 @@ use std::env;
 
 use pyo3::import_exception;
 
+pub mod barrier_before_final_measurements;
 pub mod circuit_library;
 pub mod convert_2q_block_matrix;
 pub mod dense_layout;
