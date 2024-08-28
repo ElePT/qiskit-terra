@@ -34,8 +34,10 @@ pub mod synthesis;
 pub mod target_transpiler;
 pub mod two_qubit_decompose;
 pub mod uc_gate;
+pub mod unitary_synthesis;
 pub mod utils;
 pub mod vf2_layout;
+pub mod xx_embodiments;
 
 mod rayon_ext;
 #[cfg(test)]

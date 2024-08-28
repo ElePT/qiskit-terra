@@ -28,6 +28,7 @@ from itertools import product
 from functools import partial
 import numpy as np
 
+from qiskit._accelerate.unitary_synthesis import run_main_loop
 from qiskit.circuit.controlflow import CONTROL_FLOW_OP_NAMES
 from qiskit.circuit import Gate, Parameter, CircuitInstruction
 from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
@@ -880,6 +881,7 @@ class DefaultUnitarySynthesis(plugin.UnitarySynthesisPlugin):
                 if error is None:
                     error = 0.0
                 basis_2q_fidelity[strength] = 1 - error
+                
             # rewrite XX of the same strength in terms of it
             embodiment = XXEmbodiments[v.base_class]
             if len(embodiment.parameters) == 1:

@@ -231,9 +231,9 @@ pub struct DAGCircuit {
     cregs: Py<PyDict>,
 
     /// The cache used to intern instruction qargs.
-    qargs_interner: Interner<[Qubit]>,
+    pub qargs_interner: Interner<[Qubit]>,
     /// The cache used to intern instruction cargs.
-    cargs_interner: Interner<[Clbit]>,
+    pub cargs_interner: Interner<[Clbit]>,
     /// Qubits registered in the circuit.
     pub qubits: BitData<Qubit>,
     /// Clbits registered in the circuit.
@@ -780,7 +780,7 @@ impl DAGCircuit {
 
     /// Return the global phase of the circuit.
     #[getter]
-    fn get_global_phase(&self) -> Param {
+    pub fn get_global_phase(&self) -> Param {
         self.global_phase.clone()
     }
 
@@ -789,7 +789,7 @@ impl DAGCircuit {
     /// Args:
     ///     angle (float, :class:`.ParameterExpression`): The phase angle.
     #[setter]
-    fn set_global_phase(&mut self, angle: Param) -> PyResult<()> {
+    pub fn set_global_phase(&mut self, angle: Param) -> PyResult<()> {
         match angle {
             Param::Float(angle) => {
                 self.global_phase = Param::Float(angle.rem_euclid(2. * PI));
@@ -1065,7 +1065,11 @@ def _format(operand):
     ///   Raises:
     ///     DAGCircuitError: If the supplied :obj:`~Bit` was of an unknown type.
     ///     DAGCircuitError: If the supplied :obj:`~Bit` could not be found on the circuit.
-    fn find_bit<'py>(&self, py: Python<'py>, bit: &Bound<PyAny>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn find_bit<'py>(
+        &self,
+        py: Python<'py>,
+        bit: &Bound<PyAny>,
+    ) -> PyResult<Bound<'py, PyAny>> {
         if bit.is_instance(imports::QUBIT.get_bound(py))? {
             return self.qubit_locations.bind(py).get_item(bit)?.ok_or_else(|| {
                 DAGCircuitError::new_err(format!(
@@ -1555,7 +1559,7 @@ def _format(operand):
     /// Returns:
     ///     DAGCircuit: An empty copy of self.
     #[pyo3(signature = (*, vars_mode="alike"))]
-    fn copy_empty_like(&self, py: Python, vars_mode: &str) -> PyResult<Self> {
+    pub fn copy_empty_like(&self, py: Python, vars_mode: &str) -> PyResult<Self> {
         let mut target_dag = DAGCircuit::new(py)?;
         target_dag.name = self.name.as_ref().map(|n| n.clone_ref(py));
         target_dag.global_phase = self.global_phase.clone();
@@ -1626,7 +1630,7 @@ def _format(operand):
     }
 
     #[pyo3(signature=(node, check=false))]
-    fn _apply_op_node_back(
+    pub fn _apply_op_node_back(
         &mut self,
         py: Python,
         node: &Bound<PyAny>,
@@ -3398,7 +3402,7 @@ def _format(operand):
     ///     DAGCircuitError: If replacement operation was incompatible with
     ///     location of target node.
     #[pyo3(signature = (node, op, inplace=false, propagate_condition=true))]
-    fn substitute_node(
+    pub fn substitute_node(
         &mut self,
         node: &Bound<PyAny>,
         op: &Bound<PyAny>,
@@ -5152,7 +5156,7 @@ impl DAGCircuit {
     /// This is mostly used to apply operations from one DAG to
     /// another that was created from the first via
     /// [DAGCircuit::copy_empty_like].
-    fn push_back(&mut self, py: Python, instr: PackedInstruction) -> PyResult<NodeIndex> {
+    pub fn push_back(&mut self, py: Python, instr: PackedInstruction) -> PyResult<NodeIndex> {
         let op_name = instr.op.name();
         let (all_cbits, vars): (Vec<Clbit>, Option<Vec<PyObject>>) = {
             if self.may_have_additional_wires(py, &instr) {
@@ -5300,7 +5304,7 @@ impl DAGCircuit {
         Ok(nodes.into_iter())
     }
 
-    fn topological_op_nodes(&self) -> PyResult<impl Iterator<Item = NodeIndex> + '_> {
+    pub fn topological_op_nodes(&self) -> PyResult<impl Iterator<Item = NodeIndex> + '_> {
         Ok(self.topological_nodes()?.filter(|node: &NodeIndex| {
             matches!(self.dag.node_weight(*node), Some(NodeType::Operation(_)))
         }))
@@ -6161,7 +6165,7 @@ impl DAGCircuit {
 
 /// Add to global phase. Global phase can only be Float or ParameterExpression so this
 /// does not handle the full possibility of parameter values.
-fn add_global_phase(py: Python, phase: &Param, other: &Param) -> PyResult<Param> {
+pub fn add_global_phase(py: Python, phase: &Param, other: &Param) -> PyResult<Param> {
     Ok(match [phase, other] {
         [Param::Float(a), Param::Float(b)] => Param::Float(a + b),
         [Param::Float(a), Param::ParameterExpression(b)] => Param::ParameterExpression(

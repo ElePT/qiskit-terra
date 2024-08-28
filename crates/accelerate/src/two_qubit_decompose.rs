@@ -341,7 +341,7 @@ const DEFAULT_FIDELITY: f64 = 1.0 - 1.0e-9;
 
 #[derive(Clone, Debug, Copy)]
 #[pyclass(module = "qiskit._accelerate.two_qubit_decompose")]
-enum Specialization {
+pub enum Specialization {
     General,
     IdEquiv,
     SWAPEquiv,
@@ -404,11 +404,11 @@ impl Specialization {
 #[pyclass(module = "qiskit._accelerate.two_qubit_decompose", subclass)]
 pub struct TwoQubitWeylDecomposition {
     #[pyo3(get)]
-    a: f64,
+    pub a: f64,
     #[pyo3(get)]
-    b: f64,
+    pub b: f64,
     #[pyo3(get)]
-    c: f64,
+    pub c: f64,
     #[pyo3(get)]
     global_phase: f64,
     K1l: Array2<Complex64>,
@@ -476,7 +476,7 @@ impl TwoQubitWeylDecomposition {
 
     /// Instantiate a new TwoQubitWeylDecomposition with rust native
     /// data structures
-    fn new_inner(
+    pub fn new_inner(
         unitary_matrix: ArrayView2<Complex64>,
 
         fidelity: Option<f64>,
@@ -1187,6 +1187,8 @@ impl TwoQubitGateSequence {
         }
     }
 }
+
+#[derive(Clone, Debug)]
 #[allow(non_snake_case)]
 #[pyclass(module = "qiskit._accelerate.two_qubit_decompose", subclass)]
 pub struct TwoQubitBasisDecomposer {
@@ -1573,7 +1575,7 @@ impl TwoQubitBasisDecomposer {
         Ok(res)
     }
 
-    fn new_inner(
+    pub fn new_inner(
         gate: String,
         gate_matrix: ArrayView2<Complex64>,
         basis_fidelity: f64,
