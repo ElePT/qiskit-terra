@@ -52,7 +52,7 @@ pub struct OneQubitGateErrorMap {
 #[pymethods]
 impl OneQubitGateErrorMap {
     #[new]
-    fn new(num_qubits: Option<usize>) -> Self {
+    pub fn new(num_qubits: Option<usize>) -> Self {
         OneQubitGateErrorMap {
             error_map: match num_qubits {
                 Some(n) => Vec::with_capacity(n),
@@ -61,7 +61,7 @@ impl OneQubitGateErrorMap {
         }
     }
 
-    fn add_qubit(&mut self, error_map: HashMap<String, f64>) {
+    pub fn add_qubit(&mut self, error_map: HashMap<String, f64>) {
         self.error_map.push(error_map);
     }
 
@@ -74,7 +74,7 @@ impl OneQubitGateErrorMap {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[pyclass(sequence)]
 pub struct OneQubitGateSequence {
     pub gates: Vec<(StandardGate, SmallVec<[f64; 3]>)>,

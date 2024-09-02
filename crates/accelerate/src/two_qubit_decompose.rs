@@ -1146,6 +1146,7 @@ impl TwoQubitWeylDecomposition {
 
 type TwoQubitSequenceVec = Vec<(Option<StandardGate>, SmallVec<[f64; 3]>, SmallVec<[u8; 2]>)>;
 
+#[derive(Clone, Debug)]
 #[pyclass(sequence)]
 pub struct TwoQubitGateSequence {
     gates: TwoQubitSequenceVec,

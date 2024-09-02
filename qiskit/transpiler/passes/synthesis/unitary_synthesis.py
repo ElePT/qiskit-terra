@@ -28,7 +28,7 @@ from itertools import product
 from functools import partial
 import numpy as np
 
-from qiskit._accelerate.unitary_synthesis import run_main_loop
+from qiskit._accelerate.unitary_synthesis import run_default_main_loop
 from qiskit.circuit.controlflow import CONTROL_FLOW_OP_NAMES
 from qiskit.circuit import Gate, Parameter, CircuitInstruction
 from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
@@ -502,9 +502,13 @@ class UnitarySynthesis(TransformationPass):
             if plugin_method.supports_coupling_map or default_method.supports_coupling_map
             else {}
         )
-        return self._run_main_loop(
-            dag, qubit_indices, plugin_method, plugin_kwargs, default_method, default_kwargs
-        )
+
+        if self.method == "default":
+            return run_default_main_loop(dag, qubit_indices, plugin_kwargs, self._min_qubits, self._coupling_map, self._approximation_degree)
+        else:
+            return self._run_main_loop(
+                dag, qubit_indices, plugin_method, plugin_kwargs, default_method, default_kwargs
+            )
 
     def _run_main_loop(
         self, dag, qubit_indices, plugin_method, plugin_kwargs, default_method, default_kwargs
