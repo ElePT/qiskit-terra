@@ -271,10 +271,12 @@ fn py_run_default_main_loop(
                             }
                             UnitarySynthesisReturnType::TwoQSequenceType(synth_sequence) => {
                                 // let (node_list, global_phase, gate) = raw_synth_dag.extract::<((&str, Param, Vec<usize>), Param, &str)>(py)?;
+                                // HERE
                                 todo!()
                             }
                             UnitarySynthesisReturnType::OneQSequenceType(synth_sequence) => {
                                 // let (node_list, global_phase, gate) = raw_synth_dag.extract::<((&str, Param, Vec<usize>), Param, &str)>(py)?;
+                                // HERE
                                 todo!()
                             }
                         }
@@ -417,12 +419,13 @@ fn run_default_unitary_synthesis(
             }
             // get the minimum of synth_circuits and return
             // TODO
-
+            // HERE
             let synth_circuit = synth_circuits[0]?.clone();
             Ok(Some(synth_circuit))
         }
         _ => {
             todo!()
+            // HERE
             // run qsd -> in python
         }
     }
@@ -534,6 +537,7 @@ fn get_2q_decomposers_from_target(
     let mut qubits: SmallVec<[PhysicalQubit; 2]> = qubits.clone();
     qubits.sort();
     let reverse_qubits: SmallVec<[PhysicalQubit; 2]> = qubits.iter().rev().map(|x| *x).collect();
+    // HERE: caching
     // TODO: here return cache --> implementation?
 
     let mut available_2q_basis: HashMap<&str, NormalOperation> = HashMap::new();
@@ -803,8 +807,8 @@ fn preferred_direction(
     qubits: &SmallVec<[PhysicalQubit; 2]>,
     natural_direction: Option<bool>,
     coupling_map: Option<PyObject>,
-    gate_lengths: Option<Bound<'_, PyDict>>,
-    gate_errors: Option<Bound<'_, PyDict>>,
+    gate_lengths: &Option<Bound<'_, PyDict>>,
+    gate_errors: &Option<Bound<'_, PyDict>>,
 ) -> PyResult<Option<bool>> {
     let reverse_qubits: SmallVec<[PhysicalQubit; 2]> = qubits.iter().rev().map(|x| *x).collect();
     let mut preferred_direction: Option<bool> = None;
@@ -835,26 +839,35 @@ fn preferred_direction(
             &decomp.getattr(py, "gate")?.extract::<String>(py)?
         }
     };
-    // go back and see how gate_dict looks like
+    // In python, gate_dict has the form: {gate_name: {(qubits,): duration}}
     let compute_cost = |gate_dict: &Bound<'_, PyDict>,
                         q_tuple: &SmallVec<[PhysicalQubit; 2]>,
                         cost: Option<f64>|
-     -> () {
+     -> PyResult<()> {
         let ids: (u32, u32) = (q_tuple[0].0, q_tuple[1].0);
+        let gate_value_vec =  gate_dict.get_item(&ids)?.unwrap();
+        // HERE
+        // why can't we extract a pyobject???
 
-        // let gate_dict_vec = gate_dict.get_item(key).unwrap_or()
-        // if let gate_dict_vec = gate_dict
-        //     .get_item(&ids)
-        //     .iter()
-        //     .map(|item| item.unwrap().extract().expect("idk what's wrong with ?"))
-        // {
-        //     if let Some(value) = gate_dict_vec
-        //         .find(|(gate, _)| gate == decomposer2q_gate)
-        //         .map(|(_, value)| *value)
-        //     {
-        //         cost = value;
-        //     }
-        // }
+
+                // ref python code
+                // cost_0_1 = next(
+                //     duration
+                //     for gate, duration in gate_lengths.get(qubits_tuple, [])
+                //     if gate == decomposer2q.gate
+                // )
+
+                // if let Ok(gate_dict_vec) = gate_value_vec.extract(){
+                //     if let Some(vec) = gate_dict_vec{
+                //         let value: Option<f64> = vec.iter()
+                //             .find(|(gate, _)| gate == decomposer2q_gate)
+                //             .map(|(_, value)| *value);
+                //         if value.is_some(){
+                //             cost = value;
+                //         }
+                //     }
+                // }
+        Ok(())
     };
 
     if preferred_direction.is_none() && (gate_lengths.is_some() || gate_errors.is_some()) {
@@ -984,7 +997,7 @@ fn synth_su4_no_dag(
                         return reversed_synth_su4(
                             py,
                             su4_mat,
-                            &DecomposerType::TwoQubitBasisDecomposerType(*decomposer_2q),
+                            &DecomposerType::TwoQubitBasisDecomposerType(decomposer_2q.clone()),
                             approximation_degree,
                         );
                     } else {
@@ -1029,6 +1042,7 @@ fn reversed_synth_su4(
 
             let mut target_dag = DAGCircuit::with_capacity(py, 2, 0, None, None, None)?;
             target_dag.set_global_phase(synth.get_global_phase());
+            // HERE
             // out_dag.add_qubits(list(reversed(synth_circ.qubits)))
             // let flip_bits = target_dag.qubits;
             // for node in synth.topological_op_nodes():
