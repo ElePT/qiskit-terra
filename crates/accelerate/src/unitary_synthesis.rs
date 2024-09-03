@@ -839,34 +839,35 @@ fn preferred_direction(
             &decomp.getattr(py, "gate")?.extract::<String>(py)?
         }
     };
-    // In python, gate_dict has the form: {gate_name: {(qubits,): duration}}
+
+    // In python, gate_dict has the form: {(qubits,): {gate_name: duration}} (wrongly documented in the docstring. Fix!)
     let compute_cost = |gate_dict: &Bound<'_, PyDict>,
                         q_tuple: &SmallVec<[PhysicalQubit; 2]>,
-                        cost: Option<f64>|
+                        mut cost: Option<f64>|
      -> PyResult<()> {
         let ids: (u32, u32) = (q_tuple[0].0, q_tuple[1].0);
-        let gate_value_vec =  gate_dict.get_item(&ids)?.unwrap();
-        // HERE
-        // why can't we extract a pyobject???
+        let gate_value_dict = gate_dict.get_item(&ids)?;
 
-
-                // ref python code
-                // cost_0_1 = next(
-                //     duration
-                //     for gate, duration in gate_lengths.get(qubits_tuple, [])
-                //     if gate == decomposer2q.gate
-                // )
-
-                // if let Ok(gate_dict_vec) = gate_value_vec.extract(){
-                //     if let Some(vec) = gate_dict_vec{
-                //         let value: Option<f64> = vec.iter()
-                //             .find(|(gate, _)| gate == decomposer2q_gate)
-                //             .map(|(_, value)| *value);
-                //         if value.is_some(){
-                //             cost = value;
-                //         }
-                //     }
-                // }
+        match gate_value_dict {
+            Some(val_dict) => {
+                cost = val_dict
+                    .extract::<&PyDict>()?
+                    .iter()
+                    .map(|(gate, value)| {
+                        (
+                            gate.extract::<String>()
+                                .expect("Cannot use ? inside this closure. Find solution"),
+                            value
+                                .extract::<f64>()
+                                .expect("Cannot use ? inside this closure. Find solution"),
+                        )
+                    })
+                    .find(|(gate, _)| gate == decomposer2q_gate)
+                    .map(|(_, value)| value)
+                    .clone();
+            }
+            None => (),
+        }
         Ok(())
     };
 
@@ -875,8 +876,8 @@ fn preferred_direction(
         let mut cost_1_0: Option<f64> = None;
 
         // Try to find the cost in gate_lengths
-        compute_cost(&gate_lengths.unwrap(), qubits, cost_0_1);
-        compute_cost(&gate_lengths.unwrap(), &reverse_qubits, cost_1_0);
+        compute_cost(&gate_lengths, qubits, cost_0_1);
+        compute_cost(&gate_lengths, &reverse_qubits, cost_1_0);
 
         // If no valid cost was found in gate_lengths, check gate_errors
         if cost_0_1.is_none() && cost_1_0.is_none() {
