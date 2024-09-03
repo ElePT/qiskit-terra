@@ -6160,6 +6160,69 @@ impl DAGCircuit {
         }
         Ok(())
     }
+
+    /// Alternative constructor, builds a DAGCircuit with a fixed capacity.
+    ///
+    /// # Arguments:
+    /// - `py`: Python GIL token
+    /// - `num_qubits`: Number of qubits in the circuit
+    /// - `num_clbits`: Number of classical bits in the circuit.
+    /// - `num_vars`: (Optional) number of variables in the circuit.
+    /// - `num_ops`: (Optional) number of operations in the circuit.
+    /// - `num_edges`: (Optional) If known, number of edges in the circuit.
+    pub fn with_capacity(
+        py: Python,
+        num_qubits: usize,
+        num_clbits: usize,
+        num_ops: Option<usize>,
+        num_vars: Option<usize>,
+        num_edges: Option<usize>,
+    ) -> PyResult<Self> {
+        let num_ops: usize = num_ops.unwrap_or_default();
+        let num_vars = num_vars.unwrap_or_default();
+        let num_edges = num_edges.unwrap_or(
+            num_qubits +    // 1 edge between the input node and the output node or 1st op node.
+            num_clbits +    // 1 edge between the input node and the output node or 1st op node.
+            num_vars +      // 1 edge between the input node and the output node or 1st op node.
+            num_ops, // In Average there will be 3 edges (2 qubits and 1 clbit, or 3 qubits) per op_node.
+        );
+
+        let num_nodes = num_qubits * 2 + // One input + One output node per qubit
+            num_clbits * 2 +    // One input + One output node per clbit
+            num_vars * 2 +  // One input + output node per variable
+            num_ops;
+
+        Ok(Self {
+            name: None,
+            metadata: Some(PyDict::new_bound(py).unbind().into()),
+            calibrations: HashMap::default(),
+            dag: StableDiGraph::with_capacity(num_nodes, num_edges),
+            qregs: PyDict::new_bound(py).unbind(),
+            cregs: PyDict::new_bound(py).unbind(),
+            qargs_interner: Interner::with_capacity(num_qubits),
+            cargs_interner: Interner::with_capacity(num_clbits),
+            qubits: BitData::with_capacity(py, "qubits".to_string(), num_qubits),
+            clbits: BitData::with_capacity(py, "clbits".to_string(), num_clbits),
+            global_phase: Param::Float(0.),
+            duration: None,
+            unit: "dt".to_string(),
+            qubit_locations: PyDict::new_bound(py).unbind(),
+            clbit_locations: PyDict::new_bound(py).unbind(),
+            qubit_io_map: Vec::with_capacity(num_qubits),
+            clbit_io_map: Vec::with_capacity(num_clbits),
+            var_input_map: _VarIndexMap::new(py),
+            var_output_map: _VarIndexMap::new(py),
+            op_names: IndexMap::default(),
+            control_flow_module: PyControlFlowModule::new(py)?,
+            vars_info: HashMap::with_capacity(num_vars),
+            vars_by_type: [
+                PySet::empty_bound(py)?.unbind(),
+                PySet::empty_bound(py)?.unbind(),
+                PySet::empty_bound(py)?.unbind(),
+            ],
+        })
+    }
+
     /// Get qargs from an intern index
     pub fn get_qargs(&self, index: Interned<[Qubit]>) -> &[Qubit] {
         self.qargs_interner.get(index)
@@ -6280,6 +6343,138 @@ impl DAGCircuit {
         } else {
             Err(DAGCircuitError::new_err("Specified node is not an op node"))
         }
+    }
+    /// Adds valid instances of [PackedInstruction] to the back of the Circuit.
+    pub fn add_from_iter<I>(&mut self, py: Python, iter: I) -> PyResult<Vec<NodeIndex>>
+    where
+        I: IntoIterator<Item = PackedInstruction>,
+    {
+        // Create HashSets to keep track of each bit/var's last node
+        let mut qubit_last_nodes: HashMap<Qubit, NodeIndex> = HashMap::default();
+        let mut clbit_last_nodes: HashMap<Clbit, NodeIndex> = HashMap::default();
+        // TODO: Refactor once Vars are in rust
+        // Dict [ Var: (int, VarWeight)]
+        let vars_last_nodes: Bound<PyDict> = PyDict::new_bound(py);
+
+        // Store new nodes to return
+        let mut new_nodes = vec![];
+        for instr in iter {
+            let op_name = instr.op.name();
+            let (all_cbits, vars): (Vec<Clbit>, Option<Vec<PyObject>>) = {
+                if self.may_have_additional_wires(py, &instr) {
+                    let mut clbits: HashSet<Clbit> =
+                        HashSet::from_iter(self.cargs_interner.get(instr.clbits).iter().copied());
+                    let (additional_clbits, additional_vars) =
+                        self.additional_wires(py, instr.op.view(), instr.condition())?;
+                    for clbit in additional_clbits {
+                        clbits.insert(clbit);
+                    }
+                    (clbits.into_iter().collect(), Some(additional_vars))
+                } else {
+                    (self.cargs_interner.get(instr.clbits).to_vec(), None)
+                }
+            };
+
+            // Increment the operation count
+            self.increment_op(op_name);
+
+            // Get the correct qubit indices
+            let qubits_id = instr.qubits;
+
+            // Insert op-node to graph.
+            let new_node = self.dag.add_node(NodeType::Operation(instr));
+            new_nodes.push(new_node);
+
+            // Check all the qubits in this instruction.
+            for qubit in self.qargs_interner.get(qubits_id) {
+                // Retrieve each qubit's last node
+                let qubit_last_node = if let Some(node) = qubit_last_nodes.remove(qubit) {
+                    node
+                } else {
+                    let output_node = self.qubit_io_map[qubit.0 as usize][1];
+                    let (edge_id, predecessor_node) = self
+                        .dag
+                        .edges_directed(output_node, Incoming)
+                        .next()
+                        .map(|edge| (edge.id(), edge.source()))
+                        .unwrap();
+                    self.dag.remove_edge(edge_id);
+                    predecessor_node
+                };
+                qubit_last_nodes.entry(*qubit).or_insert(new_node);
+                self.dag
+                    .add_edge(qubit_last_node, new_node, Wire::Qubit(*qubit));
+            }
+
+            // Check all the clbits in this instruction.
+            for clbit in all_cbits {
+                let clbit_last_node = if let Some(node) = clbit_last_nodes.remove(&clbit) {
+                    node
+                } else {
+                    let output_node = self.clbit_io_map[clbit.0 as usize][1];
+                    let (edge_id, predecessor_node) = self
+                        .dag
+                        .edges_directed(output_node, Incoming)
+                        .next()
+                        .map(|edge| (edge.id(), edge.source()))
+                        .unwrap();
+                    self.dag.remove_edge(edge_id);
+                    predecessor_node
+                };
+                clbit_last_nodes.entry(clbit).or_insert(new_node);
+                self.dag
+                    .add_edge(clbit_last_node, new_node, Wire::Clbit(clbit));
+            }
+
+            // If available, check all the vars in this instruction
+            for var in vars.iter().flatten() {
+                let var_last_node = if let Some(result) = vars_last_nodes.get_item(var)? {
+                    let node: usize = result.extract()?;
+                    vars_last_nodes.del_item(var)?;
+                    NodeIndex::new(node)
+                } else {
+                    let output_node = self.var_output_map.get(py, var).unwrap();
+                    let (edge_id, predecessor_node) = self
+                        .dag
+                        .edges_directed(output_node, Incoming)
+                        .next()
+                        .map(|edge| (edge.id(), edge.source()))
+                        .unwrap();
+                    self.dag.remove_edge(edge_id);
+                    predecessor_node
+                };
+
+                vars_last_nodes.set_item(var, new_node.index())?;
+                if var_last_node == new_node {
+                    // TODO: Fix instances of duplicate nodes for Vars
+                    continue;
+                }
+                self.dag
+                    .add_edge(var_last_node, new_node, Wire::Var(var.clone_ref(py)));
+            }
+        }
+
+        // Add the output_nodes back to qargs
+        for (qubit, node) in qubit_last_nodes {
+            let output_node = self.qubit_io_map[qubit.0 as usize][1];
+            self.dag.add_edge(node, output_node, Wire::Qubit(qubit));
+        }
+
+        // Add the output_nodes back to cargs
+        for (clbit, node) in clbit_last_nodes {
+            let output_node = self.clbit_io_map[clbit.0 as usize][1];
+            self.dag.add_edge(node, output_node, Wire::Clbit(clbit));
+        }
+
+        // Add the output_nodes back to vars
+        for item in vars_last_nodes.items() {
+            let (var, node): (PyObject, usize) = item.extract()?;
+            let output_node = self.var_output_map.get(py, &var).unwrap();
+            self.dag
+                .add_edge(NodeIndex::new(node), output_node, Wire::Var(var));
+        }
+
+        Ok(new_nodes)
     }
 }
 

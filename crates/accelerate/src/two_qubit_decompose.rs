@@ -1149,9 +1149,9 @@ type TwoQubitSequenceVec = Vec<(Option<StandardGate>, SmallVec<[f64; 3]>, SmallV
 #[derive(Clone, Debug)]
 #[pyclass(sequence)]
 pub struct TwoQubitGateSequence {
-    gates: TwoQubitSequenceVec,
+    pub gates: TwoQubitSequenceVec,
     #[pyo3(get)]
-    global_phase: f64,
+    pub global_phase: f64,
 }
 
 #[pymethods]
@@ -1194,7 +1194,7 @@ impl TwoQubitGateSequence {
 #[allow(non_snake_case)]
 #[pyclass(module = "qiskit._accelerate.two_qubit_decompose", subclass)]
 pub struct TwoQubitBasisDecomposer {
-    gate: String,
+    pub gate: String,
     basis_fidelity: f64,
     euler_basis: EulerBasis,
     pulse_optimize: Option<bool>,
@@ -1716,7 +1716,7 @@ impl TwoQubitBasisDecomposer {
         })
     }
 
-    fn call_inner(
+    pub fn call_inner(
         &self,
         unitary: ArrayView2<Complex64>,
         basis_fidelity: Option<f64>,
