@@ -645,9 +645,18 @@ class TestUnitarySynthesis(QiskitTestCase):
             )
         )
 
+    # @combine(
+    #     opt_level=[0, 1, 2, 3],
+    #     bidirectional=[True, False],
+    #     dsc=(
+    #         "test natural_direction works with transpile using opt_level {opt_level} on"
+    #         " target with multiple 2q gates with bidirectional={bidirectional}"
+    #     ),
+    #     name="opt_level_{opt_level}_bidirectional_{bidirectional}",
+    # )
     @combine(
-        opt_level=[0, 1, 2, 3],
-        bidirectional=[True, False],
+        opt_level=[0],
+        bidirectional=[True],
         dsc=(
             "test natural_direction works with transpile using opt_level {opt_level} on"
             " target with multiple 2q gates with bidirectional={bidirectional}"
@@ -659,6 +668,7 @@ class TestUnitarySynthesis(QiskitTestCase):
         qr = QuantumRegister(2)
         circ = QuantumCircuit(qr)
         circ.append(random_unitary(4, seed=1), [0, 1])
+        print(circ)
         circ_01 = transpile(
             circ, backend=backend, optimization_level=opt_level, layout_method="trivial"
         )

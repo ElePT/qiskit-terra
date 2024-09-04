@@ -27,14 +27,14 @@ use std::mem;
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::pybacked::PyBackedStr;
-use pyo3::types::{IntoPyDict, PyDict, PyString, PyTuple};
+use pyo3::types::{IntoPyDict, PyDict, PySet, PyString, PyTuple};
 use pyo3::wrap_pyfunction;
 use pyo3::Python;
 
 use ndarray::prelude::*;
-use numpy::PyArrayMethods;
-use numpy::IntoPyArray;
 use num_complex::{Complex, Complex64};
+use numpy::IntoPyArray;
+use numpy::PyArrayMethods;
 
 use rustworkx_core::petgraph::stable_graph::NodeIndex;
 
@@ -46,8 +46,7 @@ use qiskit_circuit::operations::{Param, StandardGate};
 use qiskit_circuit::packed_instruction::{PackedInstruction, PackedOperationType};
 
 use crate::euler_one_qubit_decomposer::{
-    unitary_to_gate_sequence, EulerBasis, OneQubitGateErrorMap,
-    OneQubitGateSequence,
+    unitary_to_gate_sequence, EulerBasis, OneQubitGateErrorMap, OneQubitGateSequence,
 };
 use crate::nlayout::PhysicalQubit;
 use crate::target_transpiler::{NormalOperation, Target};
@@ -237,7 +236,7 @@ fn py_run_default_main_loop(
     qubit_indices: &Bound<'_, PyDict>,
     min_qubits: usize,
     approximation_degree: Option<f64>,
-    basis_gates: Option<Vec<PyBackedStr>>,
+    basis_gates: Option<HashSet<PyBackedStr>>,
     coupling_map: Option<PyObject>,
     natural_direction: Option<bool>,
     pulse_optimize: Option<&str>,
@@ -257,8 +256,8 @@ fn py_run_default_main_loop(
                     let dag_to_circuit = DAG_TO_CIRCUIT.get_bound(py);
 
                     let mut new_blocks = Vec::new();
-
-                    for raw_block in raw_blocks.bind(py).iter().unwrap() {
+                    let raw_blocks = raw_blocks.bind(py).iter()?;
+                    for raw_block in raw_blocks {
                         let block_obj = raw_block?;
                         let block = block_obj
                             .getattr(intern!(py, "_data"))?
@@ -294,7 +293,7 @@ fn py_run_default_main_loop(
 
                     let bound_py_inst = py_inst.instruction.bind(py);
                     let new_op = bound_py_inst.call_method1("replace_blocks", (new_blocks,))?;
-                    let other_node = dag.get_node(py, node).unwrap().clone();
+                    let other_node = dag.get_node(py, node)?.clone();
                     let _ = dag.substitute_node(other_node.bind(py), &new_op, true, false);
                 }
             }
@@ -308,95 +307,131 @@ fn py_run_default_main_loop(
     // [E] implement as an iterator once it works (if it ever works)
     for node in dag.topological_op_nodes()? {
         if let NodeType::Operation(packed_instr) = &dag.dag[node] {
-            let n_qubits: usize = packed_instr.op.num_qubits().try_into().unwrap();
-            if packed_instr.op.name() == "unitary" && n_qubits >= min_qubits {
-                let unitary: Array<Complex<f64>, Dim<[usize; 2]>> =
-                    packed_instr.op.matrix(&[]).unwrap();
+            let n_qubits = packed_instr.op.num_qubits().try_into()?;
+            match n_qubits {
+                None => {
+                    return Err(QiskitError::new_err("The instruction has no qubits"));
+                }
+                Some(n_qubits) => {
+                    if packed_instr.op.name() == "unitary" && n_qubits >= min_qubits as u32 {
+                        let unitary: Option<Array<Complex<f64>, Dim<[usize; 2]>>> =
+                            packed_instr.op.matrix(&[]);
 
-                // SmallVec of physical qubits of len 2. We will map the instruction qubits to the provided qubit_indices
-                // in the original code, this info is provided through the "coupling_map" option in an obscure way
-                let qubits: SmallVec<[PhysicalQubit; 2]> =
-                    if let NodeType::Operation(inst) = &dag.dag[node] {
-                        let mut p_qubits = SmallVec::new();
-                        for q in dag.get_qargs(inst.qubits) {
-                            let mapped_q = qubit_indices
-                                .get_item(q.0)
-                                .and_then(|item| item.unwrap().extract::<u32>())?;
-                            p_qubits.push(PhysicalQubit::new(mapped_q));
-                        }
-                        p_qubits
-                    } else {
-                        unreachable!("nodes in runs will always be op nodes")
-                    };
+                        match unitary {
+                            None => {
+                                return Err(QiskitError::new_err("Unitary not found"));
+                            }
+                            Some(unitary) => {
+                                // SmallVec of physical qubits of len 2. We will map the instruction qubits to the provided qubit_indices
+                                // in the original code, this info is provided through the "coupling_map" option in an obscure way
+                                let qubits: SmallVec<[PhysicalQubit; 2]> =
+                                    if let NodeType::Operation(inst) = &dag.dag[node] {
+                                        let mut p_qubits = SmallVec::new();
+                                        for q in dag.get_qargs(inst.qubits) {
+                                            let pre_mapped_q = qubit_indices.get_item(q.0)?;
+                                            let mapped_q = match pre_mapped_q {
+                                                None => {
+                                                    return Err(QiskitError::new_err(
+                                                        "Failed mappig qubits",
+                                                    ))
+                                                }
+                                                Some(pre_mapped_q) => pre_mapped_q
+                                                    .iter()
+                                                    .map(|item| item.extract::<u32>())?,
+                                            };
+                                            p_qubits.push(PhysicalQubit::new(mapped_q?));
+                                        }
+                                        p_qubits
+                                    } else {
+                                        unreachable!("Is this unreachable?")
+                                    };
 
-                let raw_synth_output: Option<UnitarySynthesisReturnType> =
-                    run_default_unitary_synthesis(
-                        py,
-                        unitary,
-                        qubits,
-                        approximation_degree,
-                        basis_gates.clone(),
-                        coupling_map.clone(),
-                        natural_direction,
-                        pulse_optimize,
-                        gate_lengths.clone(),
-                        gate_errors.clone(),
-                        target.clone(),
-                    )?;
-
-                // the output can be None, a DAGCircuit or a TwoQubitGateSequence
-                match raw_synth_output {
-                    None => {
-                        let _ = out_dag.push_back(py, packed_instr.clone());
-                    }
-
-                    Some(synth_output) => {
-                        match synth_output {
-                            UnitarySynthesisReturnType::DAGType(synth_dag) => {
-                                for synth_node in synth_dag.topological_op_nodes()? {
-                                    let _ = out_dag.set_global_phase(add_global_phase(
+                                let raw_synth_output: Option<UnitarySynthesisReturnType> =
+                                    run_default_unitary_synthesis(
                                         py,
-                                        &out_dag.get_global_phase(),
-                                        &synth_dag.get_global_phase(),
-                                    )?);
+                                        unitary,
+                                        qubits,
+                                        approximation_degree,
+                                        basis_gates.clone(),
+                                        coupling_map.clone(),
+                                        natural_direction,
+                                        pulse_optimize,
+                                        gate_lengths.clone(),
+                                        gate_errors.clone(),
+                                        target.clone(),
+                                    )?;
 
-                                    if let NodeType::Operation(synth_packed_instr) =
-                                        &synth_dag.dag[synth_node]
-                                    {
-                                        let qargs = dag.qargs_interner.get(packed_instr.qubits);
-                                        synth_packed_instr.to_owned().qubits =
-                                            out_dag.qargs_interner.insert_owned(
-                                                out_dag
-                                                    .qubits
-                                                    .map_bits(
-                                                        synth_dag
-                                                            .qubits
-                                                            .clone()
-                                                            .map_indices(qargs)
-                                                            .map(|b| b.bind(py).clone()),
-                                                    )?
-                                                    .collect(),
-                                            );
+                                // the output can be None, a DAGCircuit or a TwoQubitGateSequence
+                                match raw_synth_output {
+                                    None => {
+                                        let _ = out_dag.push_back(py, packed_instr.clone());
+                                    }
 
-                                        let _ = out_dag.push_back(py, synth_packed_instr.clone());
+                                    Some(synth_output) => {
+                                        match synth_output {
+                                            UnitarySynthesisReturnType::DAGType(synth_dag) => {
+                                                for synth_node in
+                                                    synth_dag.topological_op_nodes()?
+                                                {
+                                                    let _ =
+                                                        out_dag.set_global_phase(add_global_phase(
+                                                            py,
+                                                            &out_dag.get_global_phase(),
+                                                            &synth_dag.get_global_phase(),
+                                                        )?);
+
+                                                    if let NodeType::Operation(synth_packed_instr) =
+                                                        &synth_dag.dag[synth_node]
+                                                    {
+                                                        let qargs = dag
+                                                            .qargs_interner
+                                                            .get(packed_instr.qubits);
+                                                        synth_packed_instr.to_owned().qubits =
+                                                            out_dag.qargs_interner.insert_owned(
+                                                                out_dag
+                                                                    .qubits
+                                                                    .map_bits(
+                                                                        synth_dag
+                                                                            .qubits
+                                                                            .clone()
+                                                                            .map_indices(qargs)
+                                                                            .map(|b| {
+                                                                                b.bind(py).clone()
+                                                                            }),
+                                                                    )?
+                                                                    .collect(),
+                                                            );
+
+                                                        let _ = out_dag.push_back(
+                                                            py,
+                                                            synth_packed_instr.clone(),
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                            UnitarySynthesisReturnType::TwoQSequenceType(
+                                                synth_sequence,
+                                            ) => {
+                                                // let (node_list, global_phase, gate) = raw_synth_dag.extract::<((&str, Param, Vec<usize>), Param, &str)>(py)?;
+                                                // HERE
+                                                todo!()
+                                            }
+                                            UnitarySynthesisReturnType::OneQSequenceType(
+                                                synth_sequence,
+                                            ) => {
+                                                // let (node_list, global_phase, gate) = raw_synth_dag.extract::<((&str, Param, Vec<usize>), Param, &str)>(py)?;
+                                                // HERE
+                                                todo!()
+                                            }
+                                        }
                                     }
                                 }
                             }
-                            UnitarySynthesisReturnType::TwoQSequenceType(synth_sequence) => {
-                                // let (node_list, global_phase, gate) = raw_synth_dag.extract::<((&str, Param, Vec<usize>), Param, &str)>(py)?;
-                                // HERE
-                                todo!()
-                            }
-                            UnitarySynthesisReturnType::OneQSequenceType(synth_sequence) => {
-                                // let (node_list, global_phase, gate) = raw_synth_dag.extract::<((&str, Param, Vec<usize>), Param, &str)>(py)?;
-                                // HERE
-                                todo!()
-                            }
                         }
+                    } else {
+                        let _ = out_dag.push_back(py, packed_instr.clone());
                     }
                 }
-            } else {
-                let _ = out_dag.push_back(py, packed_instr.clone());
             }
         }
     }
@@ -410,26 +445,34 @@ fn build_1q_error_map(target: &Option<Target>) -> Option<OneQubitGateErrorMap> {
     match target {
         Some(target) => {
             let mut e_map: OneQubitGateErrorMap = OneQubitGateErrorMap::new(target.num_qubits);
-            for qubit in 0..target.num_qubits.unwrap() {
-                let mut gate_error = HashMap::new();
-                for gate in target.operation_names() {
-                    // This unwrap is a bit suspicious. we might need to actually handle the case.
-                    if let Some(e) = target[gate]
-                        [Some(&smallvec![PhysicalQubit::new(qubit as u32)])]
-                    .clone()
-                    .unwrap()
-                    .error
-                    {
-                        gate_error.insert(gate.to_string(), e);
+            match target.num_qubits {
+                None => {
+                    None
+                }
+                Some(n_qubits) => {
+                    for qubit in 0..n_qubits {
+                        let mut gate_error = HashMap::new();
+                        for gate in target.operation_names() {
+                            if let Some(inst_props) = target[gate]
+                                [Some(&smallvec![PhysicalQubit::new(qubit as u32)])].clone()
+                            {
+                                match inst_props.error {
+                                    Some(e) => {
+                                        gate_error.insert(gate.to_string(), e);
+                                    }
+                                    None => continue
+                                }
+                            }
+                            // Reason for clone: move occurs because `gate_error` has type
+                            // `hashbrown::HashMap<String, f64>`, which does not implement the `Copy` trait
+                            e_map.add_qubit(gate_error.clone())
+                        }
                     }
-                    // Reason for clone: move occurs because `gate_error` has type
-                    // `hashbrown::HashMap<String, f64>`, which does not implement the `Copy` trait
-                    e_map.add_qubit(gate_error.clone())
+                    Some(e_map)
                 }
             }
-            Some(e_map)
         }
-        None => None,
+        None => None
     }
 }
 
@@ -444,7 +487,7 @@ fn run_default_unitary_synthesis(
     unitary: Array2<Complex64>,
     qubits: SmallVec<[PhysicalQubit; 2]>,
     approximation_degree: Option<f64>,
-    basis_gates: Option<Vec<PyBackedStr>>,
+    basis_gates: Option<HashSet<PyBackedStr>>,
     coupling_map: Option<PyObject>,
     natural_direction: Option<bool>,
     pulse_optimize: Option<&str>,
@@ -458,7 +501,7 @@ fn run_default_unitary_synthesis(
             let error_map = build_1q_error_map(&target);
             match unitary_to_gate_sequence(
                 unitary.into_pyarray_bound(py).readonly(),
-                basis_gates.unwrap(),
+                basis_gates.unwrap().into_iter().collect(),
                 qubits[0].0 as usize,
                 error_map.as_ref(),
                 false,
@@ -982,7 +1025,8 @@ fn preferred_direction(
 
     // In python, gate_dict has the form: {(qubits,): {gate_name: duration}} (wrongly documented in the docstring. Fix!)
     let compute_cost = |gate_dict: &Option<Bound<'_, PyDict>>,
-                        q_tuple: &SmallVec<[PhysicalQubit; 2]>, in_cost: Option<f64>|
+                        q_tuple: &SmallVec<[PhysicalQubit; 2]>,
+                        in_cost: Option<f64>|
      -> PyResult<Option<f64>> {
         let ids: (u32, u32) = (q_tuple[0].0, q_tuple[1].0);
 
@@ -990,28 +1034,26 @@ fn preferred_direction(
             Some(gate_dict) => {
                 let gate_value_dict = gate_dict.get_item(&ids)?;
                 let cost = match gate_value_dict {
-                    Some(val_dict) => {
-                        val_dict
-                            .extract::<&PyDict>()?
-                            .iter()
-                            .map(|(gate, value)| {
-                                (
-                                    gate.extract::<String>()
-                                        .expect("Cannot use ? inside this closure. Find solution"),
-                                    value
-                                        .extract::<f64>()
-                                        .expect("Cannot use ? inside this closure. Find solution"),
-                                )
-                            })
-                            .find(|(gate, _)| *gate == decomposer2q_gate)
-                            .map(|(_, value)| value)
-                            .clone()
-                    }
+                    Some(val_dict) => val_dict
+                        .extract::<&PyDict>()?
+                        .iter()
+                        .map(|(gate, value)| {
+                            (
+                                gate.extract::<String>()
+                                    .expect("Cannot use ? inside this closure. Find solution"),
+                                value
+                                    .extract::<f64>()
+                                    .expect("Cannot use ? inside this closure. Find solution"),
+                            )
+                        })
+                        .find(|(gate, _)| *gate == decomposer2q_gate)
+                        .map(|(_, value)| value)
+                        .clone(),
                     None => in_cost,
                 };
-                return Ok(cost)
+                return Ok(cost);
             }
-            None => return Ok(in_cost)
+            None => return Ok(in_cost),
         }
     };
 
