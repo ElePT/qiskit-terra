@@ -380,8 +380,8 @@ fn run_default_unitary_synthesis(
                             &qubits,
                             natural_direction,
                             coupling_map,
-                            gate_lengths,
-                            gate_errors,
+                            &gate_lengths,
+                            &gate_errors,
                         )?;
                         let synth = synth_su4_no_dag(
                             py,
@@ -405,8 +405,8 @@ fn run_default_unitary_synthesis(
                     &qubits,
                     natural_direction,
                     coupling_map.clone(),
-                    gate_lengths.clone(),
-                    gate_errors.clone(),
+                    &gate_lengths,
+                    &gate_errors,
                 )?;
                 let synth_circuit = synth_su4(
                     py,
@@ -841,32 +841,39 @@ fn preferred_direction(
     };
 
     // In python, gate_dict has the form: {(qubits,): {gate_name: duration}} (wrongly documented in the docstring. Fix!)
-    let compute_cost = |gate_dict: &Bound<'_, PyDict>,
+    let compute_cost = |gate_dict: &Option<Bound<'_, PyDict>>,
                         q_tuple: &SmallVec<[PhysicalQubit; 2]>,
                         mut cost: Option<f64>|
      -> PyResult<()> {
-        let ids: (u32, u32) = (q_tuple[0].0, q_tuple[1].0);
-        let gate_value_dict = gate_dict.get_item(&ids)?;
 
-        match gate_value_dict {
-            Some(val_dict) => {
-                cost = val_dict
-                    .extract::<&PyDict>()?
-                    .iter()
-                    .map(|(gate, value)| {
-                        (
-                            gate.extract::<String>()
-                                .expect("Cannot use ? inside this closure. Find solution"),
-                            value
-                                .extract::<f64>()
-                                .expect("Cannot use ? inside this closure. Find solution"),
-                        )
-                    })
-                    .find(|(gate, _)| gate == decomposer2q_gate)
-                    .map(|(_, value)| value)
-                    .clone();
+        let ids: (u32, u32) = (q_tuple[0].0, q_tuple[1].0);
+
+        match gate_dict{
+            Some(gate_dict) => {
+                let gate_value_dict = gate_dict.get_item(&ids)?;
+
+                match gate_value_dict {
+                    Some(val_dict) => {
+                        cost = val_dict
+                            .extract::<&PyDict>()?
+                            .iter()
+                            .map(|(gate, value)| {
+                                (
+                                    gate.extract::<String>()
+                                        .expect("Cannot use ? inside this closure. Find solution"),
+                                    value
+                                        .extract::<f64>()
+                                        .expect("Cannot use ? inside this closure. Find solution"),
+                                )
+                            })
+                            .find(|(gate, _)| gate == decomposer2q_gate)
+                            .map(|(_, value)| value)
+                            .clone();
+                    }
+                    None => (),
+                }
             }
-            None => (),
+            None => ()
         }
         Ok(())
     };
@@ -876,13 +883,13 @@ fn preferred_direction(
         let mut cost_1_0: Option<f64> = None;
 
         // Try to find the cost in gate_lengths
-        compute_cost(&gate_lengths, qubits, cost_0_1);
-        compute_cost(&gate_lengths, &reverse_qubits, cost_1_0);
+        compute_cost(gate_lengths, qubits, cost_0_1);
+        compute_cost(gate_lengths, &reverse_qubits, cost_1_0);
 
         // If no valid cost was found in gate_lengths, check gate_errors
         if cost_0_1.is_none() && cost_1_0.is_none() {
-            compute_cost(&gate_errors.unwrap(), qubits, cost_0_1);
-            compute_cost(&gate_errors.unwrap(), &reverse_qubits, cost_1_0);
+            compute_cost(gate_errors, qubits, cost_0_1);
+            compute_cost(gate_errors, &reverse_qubits, cost_1_0);
         }
 
         if cost_0_1.is_some() && cost_1_0.is_some() {
