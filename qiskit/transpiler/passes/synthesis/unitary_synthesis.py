@@ -504,8 +504,10 @@ class UnitarySynthesis(TransformationPass):
         )
 
         if self.method == "default":
-            print("qubit indices", qubit_indices)
-            return run_default_main_loop(dag, qubit_indices, self._min_qubits, self._approximation_degree, kwargs["basis_gates"], self._coupling_map, kwargs["natural_direction"], kwargs["pulse_optimize"], kwargs["gate_lengths_by_qubit"], kwargs["gate_errors_by_qubit"], kwargs["target"])
+            _gate_lengths = _gate_lengths or _build_gate_lengths(
+                    self._backend_props, self._target)
+            _gate_errors = _gate_errors or _build_gate_errors(self._backend_props, self._target)
+            return run_default_main_loop(dag, list(qubit_indices.values()), self._min_qubits, self._approximation_degree, kwargs["basis_gates"], self._coupling_map, kwargs["natural_direction"], kwargs["pulse_optimize"], _gate_lengths, _gate_errors, kwargs["target"])
         else:
             return self._run_main_loop(
                 dag, qubit_indices, plugin_method, plugin_kwargs, default_method, default_kwargs

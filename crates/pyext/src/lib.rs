@@ -22,7 +22,7 @@ use qiskit_accelerate::{
     stochastic_swap::stochastic_swap, synthesis::synthesis, target_transpiler::target,
     two_qubit_decompose::two_qubit_decompose, uc_gate::uc_gate, utils::utils,
     vf2_layout::vf2_layout,
-    unitary_synthesis::unitary_synthesis, utils::utils, vf2_layout::vf2_layout,
+    unitary_synthesis::unitary_synthesis,
 };
 
 #[inline(always)]
