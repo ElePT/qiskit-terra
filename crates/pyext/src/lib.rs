@@ -20,9 +20,8 @@ use qiskit_accelerate::{
     pauli_exp_val::pauli_expval, results::results, sabre::sabre, sampled_exp_val::sampled_exp_val,
     sparse_pauli_op::sparse_pauli_op, star_prerouting::star_prerouting,
     stochastic_swap::stochastic_swap, synthesis::synthesis, target_transpiler::target,
-    two_qubit_decompose::two_qubit_decompose, uc_gate::uc_gate, utils::utils,
-    vf2_layout::vf2_layout,
-    unitary_synthesis::unitary_synthesis,
+    two_qubit_decompose::two_qubit_decompose, uc_gate::uc_gate,
+    unitary_synthesis::unitary_synthesis, utils::utils, vf2_layout::vf2_layout,
 };
 
 #[inline(always)]
