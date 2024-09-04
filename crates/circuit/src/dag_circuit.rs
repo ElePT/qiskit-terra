@@ -1559,8 +1559,15 @@ def _format(operand):
     /// Returns:
     ///     DAGCircuit: An empty copy of self.
     #[pyo3(signature = (*, vars_mode="alike"))]
-    pub fn copy_empty_like(&self, py: Python, vars_mode: &str) -> PyResult<Self> {
-        let mut target_dag = DAGCircuit::new(py)?;
+    fn copy_empty_like(&self, py: Python, vars_mode: &str) -> PyResult<Self> {
+        let mut target_dag = DAGCircuit::with_capacity(
+            py,
+            self.num_qubits(),
+            self.num_clbits(),
+            Some(self.num_vars()),
+            None,
+            None,
+        )?;
         target_dag.name = self.name.as_ref().map(|n| n.clone_ref(py));
         target_dag.global_phase = self.global_phase.clone();
         target_dag.duration = self.duration.as_ref().map(|d| d.clone_ref(py));
@@ -6174,8 +6181,8 @@ impl DAGCircuit {
         py: Python,
         num_qubits: usize,
         num_clbits: usize,
-        num_ops: Option<usize>,
         num_vars: Option<usize>,
+        num_ops: Option<usize>,
         num_edges: Option<usize>,
     ) -> PyResult<Self> {
         let num_ops: usize = num_ops.unwrap_or_default();
