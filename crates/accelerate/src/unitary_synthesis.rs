@@ -10,6 +10,9 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
+// #[cfg(feature = "cache_pygates")]
+use std::cell::OnceCell;
+
 use approx::relative_eq;
 use core::panic;
 use hashbrown::{HashMap, HashSet};
@@ -109,6 +112,8 @@ fn dag_from_2q_gate_sequence(
                     Param::Float(params[2])
                 ])),
                 extra_attrs: None,
+                // #[cfg(feature = "cache_pygates")]
+                py_op: OnceCell::new(),
             }
         })
         .collect();
@@ -208,6 +213,8 @@ fn compute_2q_error(
                                 Param::Float(params.clone()[2])
                             ])),
                             extra_attrs: None,
+                            // #[cfg(feature = "cache_pygates")]
+                            py_op: OnceCell::new(),
                         };
                         let _ = score_instruction(&inst, inst_qubits);
                     }

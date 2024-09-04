@@ -146,7 +146,7 @@ ecr_circuit.s(0)
 ecr_circuit.h(0)
 ecr_circuit.global_phase -= np.pi / 2
 
-XXEmbodiments = {
+XXEmbodiments = { 
     RXXGate: rxx_circuit,
     RYYGate: ryy_circuit,
     RZZGate: rzz_circuit,
