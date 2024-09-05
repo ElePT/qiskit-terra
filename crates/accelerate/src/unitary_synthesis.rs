@@ -188,7 +188,7 @@ fn dag_from_2q_gate_sequence(
         instructions.push(pi);
     }
 
-    let _ = target_dag.add_from_iter(py, instructions.into_iter(), false);
+    let _ = target_dag.add_from_iter(py, instructions.into_iter());
     Ok(target_dag)
 }
 

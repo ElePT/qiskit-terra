@@ -6370,12 +6370,7 @@ impl DAGCircuit {
         }
     }
     /// Adds valid instances of [PackedInstruction] to the back of the Circuit.
-    pub fn add_from_iter<I>(
-        &mut self,
-        py: Python,
-        iter: I,
-        empty_clbits: bool,
-    ) -> PyResult<Vec<NodeIndex>>
+    pub fn add_from_iter<I>(&mut self, py: Python, iter: I) -> PyResult<Vec<NodeIndex>>
     where
         I: IntoIterator<Item = PackedInstruction>,
     {
@@ -6392,13 +6387,8 @@ impl DAGCircuit {
             let op_name = instr.op.name();
             let (all_cbits, vars): (Vec<Clbit>, Option<Vec<PyObject>>) = {
                 if self.may_have_additional_wires(py, &instr) {
-                    let mut clbits: HashSet<Clbit> = if !empty_clbits {
-                        HashSet::from_iter(self.cargs_interner.get(instr.clbits).iter().copied())
-                    } else {
-                        HashSet::new()
-                    };
-                    // let mut clbits: HashSet<Clbit> =
-                    //     HashSet::from_iter(self.cargs_interner.get(instr.clbits).iter().copied());
+                    let mut clbits: HashSet<Clbit> =
+                        HashSet::from_iter(self.cargs_interner.get(instr.clbits).iter().copied());
                     let (additional_clbits, additional_vars) =
                         self.additional_wires(py, instr.op.view(), instr.condition())?;
                     for clbit in additional_clbits {
@@ -6406,11 +6396,7 @@ impl DAGCircuit {
                     }
                     (clbits.into_iter().collect(), Some(additional_vars))
                 } else {
-                    if !empty_clbits {
-                        (self.cargs_interner.get(instr.clbits).to_vec(), None)
-                    } else {
-                        (Vec::new(), None)
-                    }
+                    (self.cargs_interner.get(instr.clbits).to_vec(), None)
                 }
             };
 
