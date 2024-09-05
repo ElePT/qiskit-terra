@@ -10,8 +10,6 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use crate::interner::fmt::Debug;
-
 use std::borrow::Borrow;
 use std::fmt;
 use std::hash::Hash;
@@ -107,9 +105,7 @@ where
     /// `Interner::get_default` to reliably work correctly without a hash lookup (though ideally
     /// we'd just use specialisation to do that).
     pub fn new() -> Self {
-        let mut set = IndexSet::with_capacity_and_hasher(1, Default::default());
-        set.insert(Default::default());
-        Self(set)
+        Self::with_capacity(1)
     }
 
     /// Retrieve the key corresponding to the default store, without any hash or equality lookup.
@@ -128,11 +124,14 @@ where
         }
     }
 
+    /// Create an interner with enough space to hold `capacity` entries.
+    ///
+    /// Note that the default item of the interner is always allocated and given a key immediately,
+    /// which will use one slot of the capacity.
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(IndexSet::with_capacity_and_hasher(
-            capacity,
-            ::ahash::RandomState::new(),
-        ))
+        let mut set = IndexSet::with_capacity_and_hasher(capacity, ::ahash::RandomState::new());
+        set.insert(Default::default());
+        Self(set)
     }
 }
 
@@ -142,10 +141,7 @@ where
     <T as ToOwned>::Owned: Hash + Eq,
 {
     /// Retrieve a reference to the stored value for this key.
-    pub fn get(&self, index: Interned<T>) -> &T
-    where
-        <T as ToOwned>::Owned: Debug,
-    {
+    pub fn get(&self, index: Interned<T>) -> &T {
         self.0
             .get_index(index.index as usize)
             .expect(
@@ -190,11 +186,7 @@ where
     ///
     /// If you don't already have the owned value, use `insert`; this will only allocate if the
     /// lookup fails.
-
-    pub fn insert_owned(&mut self, value: <T as ToOwned>::Owned) -> Interned<T>
-    where
-        <T as ToOwned>::Owned: Debug,
-    {
+    pub fn insert_owned(&mut self, value: <T as ToOwned>::Owned) -> Interned<T> {
         let index = match self.0.get_index_of(&value) {
             Some(index) => index as u32,
             None => self.insert_new(value),
@@ -203,5 +195,23 @@ where
             index,
             _type: PhantomData,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn default_key_exists() {
+        let mut interner = Interner::<[u32]>::new();
+        assert_eq!(interner.get_default(), interner.get_default());
+        assert_eq!(interner.get(interner.get_default()), &[]);
+        assert_eq!(interner.insert_owned(Vec::new()), interner.get_default());
+        assert_eq!(interner.insert(&[]), interner.get_default());
+
+        let capacity = Interner::<str>::with_capacity(4);
+        assert_eq!(capacity.get_default(), capacity.get_default());
+        assert_eq!(capacity.get(capacity.get_default()), "");
     }
 }

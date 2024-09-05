@@ -15,12 +15,12 @@ use core::num;
 use std::cell::OnceCell;
 
 use approx::relative_eq;
-use qiskit_circuit::bit_data::BitData;
 use core::panic;
 use hashbrown::{HashMap, HashSet};
+use qiskit_circuit::bit_data::BitData;
 use qiskit_circuit::packed_instruction::PackedOperation;
-use qiskit_circuit::{Clbit, Qubit};
 use qiskit_circuit::TupleLikeArg;
+use qiskit_circuit::{Clbit, Qubit};
 use smallvec::{smallvec, SmallVec};
 use std::f64::consts::PI;
 use std::hash::Hash;
@@ -57,8 +57,8 @@ use crate::target_transpiler::{NormalOperation, Target};
 use crate::two_qubit_decompose::{
     TwoQubitBasisDecomposer, TwoQubitGateSequence, TwoQubitWeylDecomposition,
 };
-use qiskit_circuit::imports;
 use crate::QiskitError;
+use qiskit_circuit::imports;
 
 const PI2: f64 = PI / 2.;
 const PI4: f64 = PI / 4.;
@@ -145,78 +145,51 @@ impl TwoQubitUnitarySequence {
     }
 }
 
-fn create_qreg<'py>(py: Python<'py>, size: u32) -> PyResult<Bound<'py, PyAny>> {
-    imports::QUANTUM_REGISTER.get_bound(py).call1((size,))
-}
-
-fn qreg_bit<'py>(py: Python, qreg: &Bound<'py, PyAny>, index: u32) -> PyResult<Bound<'py, PyAny>> {
-    qreg.call_method1(intern!(py, "__getitem__"), (index,))
-}
-
-fn std_gate(py: Python, gate: StandardGate, params: SmallVec<[Param; 3]>) -> PyResult<Py<PyAny>> {
-    gate.create_py_op(py, Some(&params), None)
-}
-
-fn parameterized_std_gate(py: Python, gate: StandardGate, param: Param) -> PyResult<Py<PyAny>> {
-    gate.create_py_op(py, Some(&[param]), None)
-}
-
-fn apply_op_back(py: Python, dag: &mut DAGCircuit, op: &Py<PyAny>, qargs: &[&Bound<PyAny>]) -> PyResult<()> {
-    dag.py_apply_operation_back(py,
-        op.bind(py).clone(),
-        Some( TupleLikeArg::extract_bound( &PyTuple::new_bound(py, qargs))? ),
-        None,
-        false)?;
-
-    Ok(())
-}
-
-
-// This function converts the 2q synthesis output from the TwoQubitBasisDecomposer (sequence of gates)
-// into a DAGCircuit for easier manipulation. Should we try to get rid of it for performance reasons? TBD
-// Used in `synth_su4` and `reversed_synth_su4`.
 fn dag_from_2q_gate_sequence(
     py: Python<'_>,
     sequence: TwoQubitUnitarySequence,
 ) -> PyResult<DAGCircuit> {
-    // For reference:
-    // pub struct TwoQubitGateSequence {
-    //     gates: TwoQubitSequenceVec,
-    //     #[pyo3(get)]
-    //     global_phase: f64,
-    // }
-    // type TwoQubitSequenceVec = Vec<(Option<StandardGate>, SmallVec<[f64; 3]>, SmallVec<[u8; 2]>)>;
     let gate_vec = &sequence.gate_sequence.gates;
-
-    // let target_dag = &mut DAGCircuit::with_capacity(py, 2, 1, None, None, None)?;
-    let target_dag = &mut DAGCircuit::new(py)?;
+    let mut target_dag = DAGCircuit::with_capacity(py, 2, 0, None, None, None)?;
     let _ = target_dag.set_global_phase(Param::Float(sequence.gate_sequence.global_phase));
-    
-    let qreg = create_qreg(py, 2)?;
-    target_dag.add_qreg(py, &qreg)?;
 
-    let (q0, q1) = (qreg_bit(py, &qreg, 0)?, qreg_bit(py, &qreg, 0)?);
+    let mut counter = 0;
+    let mut instructions = Vec::new();
 
-    for (gate, params, qubit_ids) in gate_vec{
+    for (gate, params, qubit_ids) in gate_vec {
+        counter += 1;
+        println!(
+            "Iteration: {:?}. Gate: {:?}, qubit_ids: {:?}",
+            counter, gate, qubit_ids
+        );
+
         let gate_node = match gate {
-            None => sequence.get_decomp_gate().clone().unwrap(), // this is initialized to None but should always have a value in this case
+            None => sequence.get_decomp_gate().clone().unwrap(),
             Some(gate) => *gate,
+        };
+
+        let qubits = match gate_node.num_qubits() {
+            1 => vec![Qubit(qubit_ids[0] as u32)],
+            2 => vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)],
+            _ => unreachable!(),
         };
 
         let new_params: SmallVec<[Param; 3]> = params.iter().map(|p| Param::Float(*p)).collect();
 
-        let mut qubits = Vec::new();
-        for q in qubit_ids{
-            match q{
-                0 => qubits.push(&q0),
-                1 => qubits.push(&q1),
-                _ => (),
-            }
-        }
-        apply_op_back(py, target_dag, &std_gate(py, gate_node, new_params)?, &qubits);
+        let pi = PackedInstruction {
+            op: PackedOperation::from_standard(gate_node),
+            qubits: target_dag.qargs_interner.insert(&qubits),
+            clbits: target_dag.cargs_interner.get_default(),
+            params: Some(Box::new(new_params)),
+            extra_attrs: None,
+            // #[cfg(feature = "cache_pygates")]
+            py_op: OnceCell::new(),
+        };
+        instructions.push(pi);
     }
 
-    Ok(target_dag.clone())
+    let _ = target_dag.add_from_iter(py, instructions.into_iter(), false);
+    Ok(target_dag)
 }
 
 // This is the cost function for choosing the best 2q synthesis output.
