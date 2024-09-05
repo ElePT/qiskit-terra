@@ -257,7 +257,7 @@ pub struct DAGCircuit {
     clbit_locations: Py<PyDict>,
 
     /// Map from qubit to input and output nodes of the graph.
-    qubit_io_map: Vec<[NodeIndex; 2]>,
+    pub qubit_io_map: Vec<[NodeIndex; 2]>,
 
     /// Map from clbit to input and output nodes of the graph.
     clbit_io_map: Vec<[NodeIndex; 2]>,

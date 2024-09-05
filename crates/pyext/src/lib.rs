@@ -17,8 +17,9 @@ use qiskit_accelerate::{
     commutation_checker::commutation_checker, convert_2q_block_matrix::convert_2q_block_matrix,
     dense_layout::dense_layout, error_map::error_map,
     euler_one_qubit_decomposer::euler_one_qubit_decomposer, isometry::isometry, nlayout::nlayout,
-    optimize_1q_gates::optimize_1q_gates, pauli_exp_val::pauli_expval, results::results,
-    sabre::sabre, sampled_exp_val::sampled_exp_val, sparse_pauli_op::sparse_pauli_op,
+    optimize_1q_gates::optimize_1q_gates, pauli_exp_val::pauli_expval,
+    reproduce::reproduce_elenas_issues, results::results, sabre::sabre,
+    sampled_exp_val::sampled_exp_val, sparse_pauli_op::sparse_pauli_op,
     star_prerouting::star_prerouting, stochastic_swap::stochastic_swap, synthesis::synthesis,
     target_transpiler::target, two_qubit_decompose::two_qubit_decompose, uc_gate::uc_gate,
     unitary_synthesis::unitary_synthesis, utils::utils, vf2_layout::vf2_layout,
@@ -64,5 +65,6 @@ fn _accelerate(m: &Bound<PyModule>) -> PyResult<()> {
     add_submodule(m, vf2_layout, "vf2_layout")?;
     add_submodule(m, commutation_checker, "commutation_checker")?;
     add_submodule(m, commutation_analysis, "commutation_analysis")?;
+    add_submodule(m, reproduce_elenas_issues, "reproduce_elenas_issues");
     Ok(())
 }
