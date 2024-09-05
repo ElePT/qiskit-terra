@@ -985,7 +985,7 @@ def _format(operand):
     }
 
     /// Add all wires in a quantum register.
-    fn add_qreg(&mut self, py: Python, qreg: &Bound<PyAny>) -> PyResult<()> {
+    pub fn add_qreg(&mut self, py: Python, qreg: &Bound<PyAny>) -> PyResult<()> {
         if !qreg.is_instance(imports::QUANTUM_REGISTER.get_bound(py))? {
             return Err(DAGCircuitError::new_err("not a QuantumRegister instance."));
         }
@@ -1672,7 +1672,7 @@ def _format(operand):
     /// Raises:
     ///     DAGCircuitError: if a leaf node is connected to multiple outputs
     #[pyo3(name = "apply_operation_back", signature = (op, qargs=None, cargs=None, *, check=true))]
-    fn py_apply_operation_back(
+    pub fn py_apply_operation_back(
         &mut self,
         py: Python,
         op: Bound<PyAny>,
@@ -6236,7 +6236,7 @@ impl DAGCircuit {
                 new_dag.add_qubit_unchecked(py, &bit)?;
             }
         }
-        
+
         if num_clbits > 0 {
             let clbit_cls = imports::CLBIT.get_bound(py);
             for _i in 0..num_clbits {
@@ -6385,14 +6385,12 @@ impl DAGCircuit {
         // TODO: Refactor once Vars are in rust
         // Dict [ Var: (int, VarWeight)]
         let vars_last_nodes: Bound<PyDict> = PyDict::new_bound(py);
-        println!("a");
 
         // Store new nodes to return
         let mut new_nodes = vec![];
         for instr in iter {
             let op_name = instr.op.name();
             let (all_cbits, vars): (Vec<Clbit>, Option<Vec<PyObject>>) = {
-                println!("Instr clbits {:?}", instr.clbits);
                 if self.may_have_additional_wires(py, &instr) {
                     let mut clbits: HashSet<Clbit> = if !empty_clbits {
                         HashSet::from_iter(self.cargs_interner.get(instr.clbits).iter().copied())
@@ -6401,10 +6399,8 @@ impl DAGCircuit {
                     };
                     // let mut clbits: HashSet<Clbit> =
                     //     HashSet::from_iter(self.cargs_interner.get(instr.clbits).iter().copied());
-                    println!("b");
                     let (additional_clbits, additional_vars) =
                         self.additional_wires(py, instr.op.view(), instr.condition())?;
-                    println!("c");
                     for clbit in additional_clbits {
                         clbits.insert(clbit);
                     }
@@ -6423,20 +6419,16 @@ impl DAGCircuit {
 
             // Get the correct qubit indices
             let qubits_id = instr.qubits;
-            println!("d");
             // Insert op-node to graph.
             let new_node = self.dag.add_node(NodeType::Operation(instr));
             new_nodes.push(new_node);
 
             // Check all the qubits in this instruction.
-            println!("DAG Interner: {:?}", self.qargs_interner);
             for qubit in self.qargs_interner.get(qubits_id) {
-                println!("qubit {:?}", qubit);
                 // Retrieve each qubit's last node
                 let qubit_last_node = if let Some(node) = qubit_last_nodes.remove(qubit) {
                     node
                 } else {
-                    println!("io map{:?}", self.qubit_io_map);
                     let output_node = self.qubit_io_map[qubit.0 as usize][1];
                     let (edge_id, predecessor_node) = self
                         .dag

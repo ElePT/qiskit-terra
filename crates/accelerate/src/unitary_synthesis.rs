@@ -20,6 +20,7 @@ use core::panic;
 use hashbrown::{HashMap, HashSet};
 use qiskit_circuit::packed_instruction::PackedOperation;
 use qiskit_circuit::{Clbit, Qubit};
+use qiskit_circuit::TupleLikeArg;
 use smallvec::{smallvec, SmallVec};
 use std::f64::consts::PI;
 use std::hash::Hash;
@@ -56,6 +57,7 @@ use crate::target_transpiler::{NormalOperation, Target};
 use crate::two_qubit_decompose::{
     TwoQubitBasisDecomposer, TwoQubitGateSequence, TwoQubitWeylDecomposition,
 };
+use qiskit_circuit::imports;
 use crate::QiskitError;
 
 const PI2: f64 = PI / 2.;
@@ -143,6 +145,33 @@ impl TwoQubitUnitarySequence {
     }
 }
 
+fn create_qreg<'py>(py: Python<'py>, size: u32) -> PyResult<Bound<'py, PyAny>> {
+    imports::QUANTUM_REGISTER.get_bound(py).call1((size,))
+}
+
+fn qreg_bit<'py>(py: Python, qreg: &Bound<'py, PyAny>, index: u32) -> PyResult<Bound<'py, PyAny>> {
+    qreg.call_method1(intern!(py, "__getitem__"), (index,))
+}
+
+fn std_gate(py: Python, gate: StandardGate, params: SmallVec<[Param; 3]>) -> PyResult<Py<PyAny>> {
+    gate.create_py_op(py, Some(&params), None)
+}
+
+fn parameterized_std_gate(py: Python, gate: StandardGate, param: Param) -> PyResult<Py<PyAny>> {
+    gate.create_py_op(py, Some(&[param]), None)
+}
+
+fn apply_op_back(py: Python, dag: &mut DAGCircuit, op: &Py<PyAny>, qargs: &[&Bound<PyAny>]) -> PyResult<()> {
+    dag.py_apply_operation_back(py,
+        op.bind(py).clone(),
+        Some( TupleLikeArg::extract_bound( &PyTuple::new_bound(py, qargs))? ),
+        None,
+        false)?;
+
+    Ok(())
+}
+
+
 // This function converts the 2q synthesis output from the TwoQubitBasisDecomposer (sequence of gates)
 // into a DAGCircuit for easier manipulation. Should we try to get rid of it for performance reasons? TBD
 // Used in `synth_su4` and `reversed_synth_su4`.
@@ -161,108 +190,92 @@ fn dag_from_2q_gate_sequence(
     println!("Gate Vec: {:?}", gate_vec);
     println!("Gate decomp: {:?}", sequence.get_decomp_gate());
 
-    // is num_ops correct here?
-    let mut target_dag = DAGCircuit::with_capacity(py, 2, 0, None, None, None)?;
+    // let target_dag = &mut DAGCircuit::with_capacity(py, 2, 1, None, None, None)?;
+    let target_dag = &mut DAGCircuit::new(py)?;
     let _ = target_dag.set_global_phase(Param::Float(sequence.gate_sequence.global_phase));
 
     let mut counter = 0;
-    let mut instructions = Vec::new();
+    // let mut instructions = Vec::new();
     // we need to collect "instructions" to avoid borrowing mutably in 2 places at the same time
-    for (gate, params, qubit_ids) in gate_vec {
-        counter += 1;
-        println!(
-            "Iteration: {:?}. Gate: {:?}, qubit_ids: {:?}",
-            counter, gate, qubit_ids
-        );
+    // for (gate, params, qubit_ids) in gate_vec {
+    //     counter += 1;
+    //     println!(
+    //         "Iteration: {:?}. Gate: {:?}, qubit_ids: {:?}",
+    //         counter, gate, qubit_ids
+    //     );
 
+    //     let gate_node = match gate {
+    //         None => sequence.get_decomp_gate().clone().unwrap(), // this is initialized to None but should always have a value in this case
+    //         Some(gate) => *gate,
+    //     };
+
+    //     let num_qubits = gate_node.num_qubits();
+
+    //     let qubits = match num_qubits {
+    //         1 => vec![Qubit(qubit_ids[0] as u32)],
+    //         2 => vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)],
+    //         _ => unreachable!(),
+    //     };
+
+    //     // let clbits: Vec<Clbit> = Vec::new();
+    //     let clbits: Vec<Clbit> = vec![Clbit(0)];
+    //     println!("Qubits {:?}", qubits);
+
+    //     // let qubits = vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)];
+    //     let new_params: SmallVec<[Param; 3]> = params.iter().map(|p| Param::Float(*p)).collect();
+
+    //     let pi = PackedInstruction {
+    //         op: PackedOperation::from_standard(gate_node),
+    //         qubits: target_dag.qargs_interner.insert(&qubits),
+    //         clbits: target_dag.cargs_interner.insert(&clbits),
+    //         params: Some(Box::new(new_params)),
+    //         extra_attrs: None,
+    //         // #[cfg(feature = "cache_pygates")]
+    //         py_op: OnceCell::new(),
+    //     };
+    //     // println!(
+    //     //     "Interned {:?} ",
+    //     //     target_dag
+    //     //         .clone()
+    //     //         .qargs_interner
+    //     //         .insert_owned(qubits.clone())
+    //     // );
+    //     // println!("clbits outer {:?}", pi.clbits);
+    //     instructions.push(pi);
+    // }
+
+    // so we create an iterator again to call target_dag.add_from_iter
+    println!("Did we get here");
+
+    println!("Target qubits: {:?}", target_dag.qubits);
+    println!("Target clbits: {:?}", target_dag.clbits);
+
+    // let _ = target_dag.add_from_iter(py, instructions.into_iter(), true);
+    
+    let qreg = create_qreg(py, 2)?;
+    target_dag.add_qreg(py, &qreg)?;
+
+    let (q0, q1) = (qreg_bit(py, &qreg, 0)?, qreg_bit(py, &qreg, 0)?);
+
+    for (gate, params, qubit_ids) in gate_vec{
         let gate_node = match gate {
             None => sequence.get_decomp_gate().clone().unwrap(), // this is initialized to None but should always have a value in this case
             Some(gate) => *gate,
         };
 
-        let num_qubits = gate_node.num_qubits();
-
-        let qubits = match num_qubits {
-            1 => vec![Qubit(qubit_ids[0] as u32)],
-            2 => vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)],
-            _ => unreachable!(),
-        };
-
-        let clbits: Vec<Clbit> = Vec::new();
-        println!("Qubits {:?}", qubits);
-
-        // let qubits = vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)];
+        let mut qubits = Vec::new();
         let new_params: SmallVec<[Param; 3]> = params.iter().map(|p| Param::Float(*p)).collect();
-
-        let pi = PackedInstruction {
-            op: PackedOperation::from_standard(gate_node),
-            qubits: target_dag.qargs_interner.insert(&qubits),
-            clbits: target_dag.cargs_interner.get_default(),
-            params: Some(Box::new(new_params)),
-            extra_attrs: None,
-            // #[cfg(feature = "cache_pygates")]
-            py_op: OnceCell::new(),
-        };
-        // println!(
-        //     "Interned {:?} ",
-        //     target_dag
-        //         .clone()
-        //         .qargs_interner
-        //         .insert_owned(qubits.clone())
-        // );
-        // println!("clbits outer {:?}", pi.clbits);
-        instructions.push(pi);
+        for q in qubit_ids{
+            match q{
+                0 => qubits.push(&q0),
+                1 => qubits.push(&q1),
+                _ => (),
+            }
+        }
+        apply_op_back(py, target_dag, &std_gate(py, gate_node, new_params)?, &qubits);
     }
-    // // we need to collect "instructions" to avoid borrowing mutably in 2 places at the same time
-    // let instructions: Vec<PackedInstruction> = gate_vec
-    //     .iter()
-    //     .map(|(gate, params, qubit_ids)| {
-    //         println!("gate, qubit ids: {:?}, {:?}", gate, qubit_ids);
-    //         let gate_node = match gate {
-    //             None => sequence.get_decomp_gate().clone().unwrap(), // this is initialized to None but should always have a value in this case
-    //             Some(gate) => *gate,
-    //         };
-    //         let num_qubits = gate_node.num_qubits();
-    //         println!("num qubits {:?}", num_qubits);
-    //         println!("qubit ids? {:?}", qubit_ids);
-    //         // println!("did we get here?? {:?}", target_dag.qargs_interner);
-    //         let qubits = match num_qubits {
-    //             1 => vec![Qubit(qubit_ids[0] as u32)],
-    //             2 => vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)],
-    //             _ => unreachable!(),
-    //         };
-    //         // let qubits: Vec<Qubit> = qubit_ids.iter().map(|id| Qubit(*id as u32)).collect();
-    //         println!("Qubits {:?}", qubits);
-    //         // let qubits = vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)];
-    //         let new_params: SmallVec<[Param; 3]> =
-    //             params.iter().map(|p| Param::Float(*p)).collect();
-    //         let pi = PackedInstruction {
-    //             op: PackedOperation::from_standard(gate_node),
-    //             qubits: target_dag.qargs_interner.insert(&qubits),
-    //             clbits: target_dag.cargs_interner.get_default(),
-    //             params: Some(Box::new(new_params)),
-    //             extra_attrs: None,
-    //             // #[cfg(feature = "cache_pygates")]
-    //             py_op: OnceCell::new(),
-    //         };
-    //         println!("Interned {:?}", target_dag.clone().qargs_interner.insert_owned(qubits.clone()));
-    //         pi
 
-    //     })
-    //     .collect();
-
-    // so we create an iterator again to call target_dag.add_from_iter
-    println!("Did we get here");
-    println!(
-        "Ouside of the loop {:?} ",
-        target_dag.clone().qargs_interner
-    );
-
-    println!("Target qubits: {:?}", target_dag.qubits);
-    println!("Target clbits: {:?}", target_dag.clbits);
-
-    let _ = target_dag.add_from_iter(py, instructions.into_iter(), true);
-    Ok(target_dag)
+    Ok(target_dag.clone())
 }
 
 // This is the cost function for choosing the best 2q synthesis output.
