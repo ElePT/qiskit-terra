@@ -14,6 +14,7 @@ use core::num;
 // #[cfg(feature = "cache_pygates")]
 use std::cell::OnceCell;
 
+use ahash::HashMap;
 use approx::relative_eq;
 use core::panic;
 use hashbrown::{HashMap, HashSet};
@@ -89,7 +90,7 @@ pub struct TwoQubitUnitarySequence {
 }
 
 impl TwoQubitUnitarySequence {
-    fn new() -> Self {
+    pub fn new() -> Self {
         TwoQubitUnitarySequence {
             gate_sequence: TwoQubitGateSequence::new(),
             decomp_gate: None,
@@ -105,12 +106,12 @@ impl TwoQubitUnitarySequence {
         self.decomp_gate = state.1;
     }
 
-    fn set_state(&mut self, state: (TwoQubitGateSequence, Option<String>)) {
+    pub fn set_state(&mut self, state: (TwoQubitGateSequence, Option<String>)) {
         self.gate_sequence = state.0;
         self.decomp_gate = state.1;
     }
 
-    fn get_decomp_gate(&self) -> Option<StandardGate> {
+    pub fn get_decomp_gate(&self) -> Option<StandardGate> {
         println!(
             "decomp gate name {:?}",
             self.decomp_gate.as_deref() == Some("cx")
@@ -295,22 +296,55 @@ fn compute_2q_error(
     }
 }
 
-// This is the outer-most run function. It is meant to be called from Python inside `UnitarySynthesis.run()`
-// This loop iterates over the dag and calls `run_default_unitary_synthesis` (defined below).
 #[pyfunction]
 #[pyo3(name = "run_default_main_loop")]
 fn py_run_default_main_loop(
     py: Python,
-    dag: &mut DAGCircuit,
-    // originally, qubit indices = {bit: i for i, bit in enumerate(dag.qubits)}
-    // for example: {Qubit(QuantumRegister(2, 'q1'), 0): 0, Qubit(QuantumRegister(2, 'q1'), 1): 1}
-    qubit_indices: &Bound<'_, PyList>,
+    dag: DAGCircuit,
     min_qubits: usize,
     approximation_degree: Option<f64>,
     basis_gates: Option<HashSet<PyBackedStr>>,
     coupling_map: Option<PyObject>,
     natural_direction: Option<bool>,
-    pulse_optimize: Option<&str>,
+    pulse_optimize: Option<bool>,
+    gate_lengths: Option<Bound<'_, PyDict>>,
+    gate_errors: Option<Bound<'_, PyDict>>,
+    target: Option<Target>,
+) -> PyResult<DAGCircuit> {
+
+    // map: <position = OG, number = synthesized>
+    let qubit_indice: HashSet<usize> = (0..dag.num_qubits()).collect();
+
+    rust_run_default_main_loop(                            
+        py,
+        &mut dag,
+        qubit_indices,
+        min_qubits,
+        approximation_degree,
+        basis_gates,
+        coupling_map,
+        natural_direction,
+        pulse_optimize,
+        gate_lengths,
+        gate_errors,
+        target)
+}
+
+// This is the outer-most run function. It is meant to be called from Python inside `UnitarySynthesis.run()`
+// This loop iterates over the dag and calls `run_default_unitary_synthesis` (defined below).
+fn rust_run_default_main_loop(
+    py: Python,
+    dag: &mut DAGCircuit,
+    // originally, qubit indices = {bit: i for i, bit in enumerate(dag.qubits)}
+    // for example: {Qubit(QuantumRegister(2, 'q1'), 0): 0, Qubit(QuantumRegister(2, 'q1'), 1): 1}
+    // in the rust world, this will be a dict where the key is a QUBIT (it's in python world) and the value is an index.
+    qubit_indices: HashSet<usize>,
+    min_qubits: usize,
+    approximation_degree: Option<f64>,
+    basis_gates: Option<HashSet<PyBackedStr>>,
+    coupling_map: Option<PyObject>,
+    natural_direction: Option<bool>,
+    pulse_optimize: Option<bool>,
     gate_lengths: Option<Bound<'_, PyDict>>,
     gate_errors: Option<Bound<'_, PyDict>>,
     target: Option<Target>,
@@ -558,7 +592,7 @@ fn run_default_unitary_synthesis(
     basis_gates: Option<HashSet<PyBackedStr>>,
     coupling_map: Option<PyObject>,
     natural_direction: Option<bool>,
-    pulse_optimize: Option<&str>,
+    pulse_optimize: Option<bool>,
     gate_lengths: Option<Bound<'_, PyDict>>,
     gate_errors: Option<Bound<'_, PyDict>>,
     target: Option<Target>,
@@ -594,6 +628,7 @@ fn run_default_unitary_synthesis(
                         &qubits,
                         approximation_degree,
                     )?;
+                    println!("Already got decomposers from target {:?}: ", decomposers_2q);
                     match decomposers_2q {
                         Some(decomp) => decomp,
                         None => Vec::new(),
@@ -601,7 +636,7 @@ fn run_default_unitary_synthesis(
                 }
                 None => todo!(), // HERE decomposer_2q_from_basis_gates -> this one uses pulse_optimize
             };
-            // println!("These are the found decomposers: {:?}", decomposers);
+            println!("These are the found decomposers: {:?}", decomposers);
 
             // If we have a single TwoQubitBasisDecomposer, skip dag creation as we don't need to
             // store and can instead manually create the synthesized gates directly in the output dag
@@ -661,15 +696,17 @@ fn run_default_unitary_synthesis(
             }
 
             // get the minimum of synth_circuits and return
-            let synth_circuit = synth_circuits
-                .into_iter()
-                .min_by(|circ1, circ2| {
-                    compute_2q_error(py, circ1, &target, &qubits)
-                        .partial_cmp(&compute_2q_error(py, circ2, &target, &qubits))
-                        .unwrap()
-                })
-                .unwrap()?;
-            Ok(Some(synth_circuit))
+            let synth_circuit = synth_circuits.into_iter().min_by(|circ1, circ2| {
+                compute_2q_error(py, circ1, &target, &qubits)
+                    .partial_cmp(&compute_2q_error(py, circ2, &target, &qubits))
+                    .unwrap()
+            });
+
+            // If synth_circuits is empty -> return None
+            match synth_circuit {
+                Some(result) => Ok(Some(result?)),
+                None => Ok(None),
+            }
         }
         _ => {
             todo!()
@@ -752,13 +789,7 @@ fn replace_parametrized_gate(mut op: NormalOperation) -> NormalOperation {
             }
             _ => (),
         }
-        print!("After replacing params {:?}", op.params)
-        // match (std_gate.name(), &op.params[0]) {
-        //     ("rxx", Param::ParameterExpression(_)) => op.params[0] = Param::Float(PI2),
-        //     ("rzx", Param::ParameterExpression(_)) => op.params[0] = Param::Float(PI4),
-        //     ("rzz", Param::ParameterExpression(_)) => op.params[0] = Param::Float(PI2),
-        //     _ => (),
-        // }
+        println!("After replacing params {:?}", op.params)
     }
     op
 }
@@ -869,6 +900,11 @@ fn get_2q_decomposers_from_target(
         }
 
         available_2q_basis.insert(key, replace_parametrized_gate(op));
+        println!("after inserting in available_2q_basis {:?}", available_2q_basis);
+
+        println!("Target key and qargs {:?}, {:?}", key, q_pair);
+        println!("Target key access {:?}", target[key]);
+
         available_2q_props.insert(
             key,
             (
@@ -876,6 +912,8 @@ fn get_2q_decomposers_from_target(
                 target[key][Some(q_pair)].clone().unwrap().error.clone(),
             ),
         );
+        println!("after inserting in available_2q_props {:?}", available_2q_props);
+
     }
     println!(
         "This is the available 2q basis: {:?}, {:?}",
@@ -902,18 +940,24 @@ fn get_2q_decomposers_from_target(
     let mut decomposers: Vec<DecomposerType> = Vec::new();
 
     fn is_supercontrolled(op: &NormalOperation) -> bool {
-        match op.operation.matrix(&[]) {
+        println!("Inside is_supercontrolled");
+        println!("This is the matrix: {:?}", op.operation.matrix(&op.params));
+        match op.operation.matrix(&op.params) {
             None => false,
             Some(unitary_matrix) => {
                 let kak = TwoQubitWeylDecomposition::new_inner(unitary_matrix.view(), None, None)
                     .unwrap();
-                relative_eq!(kak.a, PI4) && relative_eq!(kak.c, 0.0)
+                println!("After kak: {:?}, {:?}", kak.a, kak.c);
+                let out = relative_eq!(kak.a, PI4) && relative_eq!(kak.c, 0.0);
+                println!("Is supercontrolled out: {:?}", out);
+                out
             }
         }
     }
 
     fn is_controlled(op: &NormalOperation) -> bool {
-        match op.operation.matrix(&[]) {
+        println!("Inside is_controlled");
+        match op.operation.matrix(&op.params) {
             None => false,
             Some(unitary_matrix) => {
                 let kak = TwoQubitWeylDecomposition::new_inner(unitary_matrix.view(), None, None)
@@ -941,10 +985,10 @@ fn get_2q_decomposers_from_target(
     {
         let mut basis_2q_fidelity: f64 = match available_2q_props.get(basis_2q) {
             Some(&(_, error)) => {
-                if error.is_none() {
-                    1.0
-                } else {
-                    1.0 - error.unwrap()
+                println!("panic here?");
+                match error {
+                    None => 1.0,
+                    Some(e) => 1.0 - e,
                 }
             }
             None => 1.0,
