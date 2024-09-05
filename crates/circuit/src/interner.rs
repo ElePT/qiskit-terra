@@ -10,6 +10,8 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
+use crate::interner::fmt::Debug;
+
 use std::borrow::Borrow;
 use std::fmt;
 use std::hash::Hash;
@@ -140,7 +142,10 @@ where
     <T as ToOwned>::Owned: Hash + Eq,
 {
     /// Retrieve a reference to the stored value for this key.
-    pub fn get(&self, index: Interned<T>) -> &T {
+    pub fn get(&self, index: Interned<T>) -> &T
+    where
+        <T as ToOwned>::Owned: Debug,
+    {
         self.0
             .get_index(index.index as usize)
             .expect(
@@ -185,7 +190,11 @@ where
     ///
     /// If you don't already have the owned value, use `insert`; this will only allocate if the
     /// lookup fails.
-    pub fn insert_owned(&mut self, value: <T as ToOwned>::Owned) -> Interned<T> {
+
+    pub fn insert_owned(&mut self, value: <T as ToOwned>::Owned) -> Interned<T>
+    where
+        <T as ToOwned>::Owned: Debug,
+    {
         let index = match self.0.get_index_of(&value) {
             Some(index) => index as u32,
             None => self.insert_new(value),

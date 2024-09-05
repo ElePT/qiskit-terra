@@ -668,7 +668,6 @@ class TestUnitarySynthesis(QiskitTestCase):
         qr = QuantumRegister(2)
         circ = QuantumCircuit(qr)
         circ.append(random_unitary(4, seed=1), [0, 1])
-        print(circ.decompose())
         circ_01 = transpile(
             circ, backend=backend, optimization_level=opt_level, layout_method="trivial"
         )
