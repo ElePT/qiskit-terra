@@ -491,11 +491,13 @@ def _get_gate_span(qubits, node):
     """
     min_index = len(qubits)
     max_index = 0
+    print("\n NODE: ", node)
     for qreg in node.qargs:
-        print("QUBITS:", qubits)
-        print("QREG:", qreg)
-        print("INDEX:", qubits.index(qreg))
+        print("\n QUBITS:", qubits)
+        print("\n QREG:", qreg._register)
 
+        for qubit in qubits:
+            print("INDIVIDUAL QUBIT: ", qubit)
         index = qubits.index(qreg)
 
         if index < min_index:

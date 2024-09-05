@@ -187,70 +187,10 @@ fn dag_from_2q_gate_sequence(
     // }
     // type TwoQubitSequenceVec = Vec<(Option<StandardGate>, SmallVec<[f64; 3]>, SmallVec<[u8; 2]>)>;
     let gate_vec = &sequence.gate_sequence.gates;
-    println!("Gate Vec: {:?}", gate_vec);
-    println!("Gate decomp: {:?}", sequence.get_decomp_gate());
 
     // let target_dag = &mut DAGCircuit::with_capacity(py, 2, 1, None, None, None)?;
     let target_dag = &mut DAGCircuit::new(py)?;
     let _ = target_dag.set_global_phase(Param::Float(sequence.gate_sequence.global_phase));
-
-    let mut counter = 0;
-    // let mut instructions = Vec::new();
-    // we need to collect "instructions" to avoid borrowing mutably in 2 places at the same time
-    // for (gate, params, qubit_ids) in gate_vec {
-    //     counter += 1;
-    //     println!(
-    //         "Iteration: {:?}. Gate: {:?}, qubit_ids: {:?}",
-    //         counter, gate, qubit_ids
-    //     );
-
-    //     let gate_node = match gate {
-    //         None => sequence.get_decomp_gate().clone().unwrap(), // this is initialized to None but should always have a value in this case
-    //         Some(gate) => *gate,
-    //     };
-
-    //     let num_qubits = gate_node.num_qubits();
-
-    //     let qubits = match num_qubits {
-    //         1 => vec![Qubit(qubit_ids[0] as u32)],
-    //         2 => vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)],
-    //         _ => unreachable!(),
-    //     };
-
-    //     // let clbits: Vec<Clbit> = Vec::new();
-    //     let clbits: Vec<Clbit> = vec![Clbit(0)];
-    //     println!("Qubits {:?}", qubits);
-
-    //     // let qubits = vec![Qubit(qubit_ids[0] as u32), Qubit(qubit_ids[1] as u32)];
-    //     let new_params: SmallVec<[Param; 3]> = params.iter().map(|p| Param::Float(*p)).collect();
-
-    //     let pi = PackedInstruction {
-    //         op: PackedOperation::from_standard(gate_node),
-    //         qubits: target_dag.qargs_interner.insert(&qubits),
-    //         clbits: target_dag.cargs_interner.insert(&clbits),
-    //         params: Some(Box::new(new_params)),
-    //         extra_attrs: None,
-    //         // #[cfg(feature = "cache_pygates")]
-    //         py_op: OnceCell::new(),
-    //     };
-    //     // println!(
-    //     //     "Interned {:?} ",
-    //     //     target_dag
-    //     //         .clone()
-    //     //         .qargs_interner
-    //     //         .insert_owned(qubits.clone())
-    //     // );
-    //     // println!("clbits outer {:?}", pi.clbits);
-    //     instructions.push(pi);
-    // }
-
-    // so we create an iterator again to call target_dag.add_from_iter
-    println!("Did we get here");
-
-    println!("Target qubits: {:?}", target_dag.qubits);
-    println!("Target clbits: {:?}", target_dag.clbits);
-
-    // let _ = target_dag.add_from_iter(py, instructions.into_iter(), true);
     
     let qreg = create_qreg(py, 2)?;
     target_dag.add_qreg(py, &qreg)?;
@@ -263,8 +203,9 @@ fn dag_from_2q_gate_sequence(
             Some(gate) => *gate,
         };
 
-        let mut qubits = Vec::new();
         let new_params: SmallVec<[Param; 3]> = params.iter().map(|p| Param::Float(*p)).collect();
+
+        let mut qubits = Vec::new();
         for q in qubit_ids{
             match q{
                 0 => qubits.push(&q0),
@@ -390,8 +331,6 @@ fn py_run_default_main_loop(
     dag: &mut DAGCircuit,
     // originally, qubit indices = {bit: i for i, bit in enumerate(dag.qubits)}
     // for example: {Qubit(QuantumRegister(2, 'q1'), 0): 0, Qubit(QuantumRegister(2, 'q1'), 1): 1}
-    // We don't have a good way to use this in rust, so we are just gonna use the dag qubit_ids as a list.
-    // But I think we can avoid this list alltogether?
     qubit_indices: &Bound<'_, PyList>,
     min_qubits: usize,
     approximation_degree: Option<f64>,

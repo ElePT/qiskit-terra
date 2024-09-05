@@ -671,6 +671,7 @@ class TestUnitarySynthesis(QiskitTestCase):
         circ_01 = transpile(
             circ, backend=backend, optimization_level=opt_level, layout_method="trivial"
         )
+        print(circ_01)
         circ_01_index = {qubit: index for index, qubit in enumerate(circ_01.qubits)}
         self.assertGreaterEqual(len(circ_01.get_instructions("cx")), 1)
         for instr in circ_01.get_instructions("cx"):

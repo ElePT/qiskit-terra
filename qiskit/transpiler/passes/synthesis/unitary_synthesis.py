@@ -508,7 +508,16 @@ class UnitarySynthesis(TransformationPass):
                     self._backend_props, self._target)
             _gate_errors = _gate_errors or _build_gate_errors(self._backend_props, self._target)
             out = run_default_main_loop(dag, list(qubit_indices.values()), self._min_qubits, self._approximation_degree, kwargs["basis_gates"], self._coupling_map, kwargs["natural_direction"], kwargs["pulse_optimize"], _gate_lengths, _gate_errors, kwargs["target"])
-            print("--> SYNTHESIS OUTPUT", dag_to_circuit(out))
+            print("--> SYNTHESIS OUTPUT", out.qubits)
+            # circ = dag_to_circuit(out)
+            # print(circ)
+            for qubit in out.qubits:
+                print("QUBIT", qubit)
+            for node in out.topological_op_nodes():
+                print("BLA", node.qargs)
+                for qubit in node.qargs:
+                    print("QARG", qubit)
+
             return out
         else:
             return self._run_main_loop(
